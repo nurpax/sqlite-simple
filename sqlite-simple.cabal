@@ -1,0 +1,46 @@
+Name:                sqlite-simple
+Version:             0.1.0.0
+Synopsis:            Mid-Level SQLite client library
+Description:
+    Mid-Level SQLite client library, based on postgresql-simple.
+License:             BSD3
+License-file:        LICENSE
+Author:              Janne Hellsten <jjhellst@gamil.com>
+Maintainer:          Janne Hellsten <jjhellst@gamil.com>
+Copyright:           (c) 2011 MailRank, Inc.
+                     (c) 2011-2012 Leon P Smith
+                     (c) 2012 Janne Hellsten
+Category:            Database
+Build-type:          Simple
+
+Cabal-version:       >= 1.9.2
+
+extra-source-files:
+     CONTRIBUTORS
+
+Library
+  Exposed-modules:
+     Database.SQLite.Simple
+
+  Build-depends:
+    attoparsec >= 0.8.5.3,
+    base < 5,
+    blaze-builder,
+    blaze-textual,
+    bytestring >= 0.9,
+    containers,
+    direct-sqlite >= 1.1,
+    template-haskell,
+    text >= 0.11.1,
+    time,
+    transformers,
+    vector
+
+  extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
+              TypeOperators
+
+  ghc-options: -Wall -fno-warn-name-shadowing
+
+source-repository head
+  type:     git
+  location: http://github.com/nurpax/sqlite-simple
