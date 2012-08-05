@@ -1,5 +1,7 @@
 # sqlite-simple: mid-level bindings to the sqlite database
 
+## THIS LIBRARY IS VERY MUCH WIP! (do not use yet)
+
 This library is a mid-level Haskell binding to the SQLite database.
 
 Borrows almost directly from
