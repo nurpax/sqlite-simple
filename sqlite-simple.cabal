@@ -21,6 +21,7 @@ extra-source-files:
 Library
   Exposed-modules:
      Database.SQLite.Simple
+     Database.SQLite.Simple.Ok
 
   Build-depends:
     attoparsec >= 0.8.5.3,
@@ -39,7 +40,7 @@ Library
   extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
               TypeOperators
 
-  ghc-options: -Wall -fno-warn-name-shadowing
+  ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-imports
 
 source-repository head
   type:     git
