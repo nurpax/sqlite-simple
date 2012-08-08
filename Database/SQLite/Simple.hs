@@ -5,6 +5,7 @@ module Database.SQLite.Simple (
     open
   , close
   , query_
+  , execute_
   , field
   , Query
   , Connection
@@ -53,12 +54,20 @@ open fname = Connection <$> Base.open fname
 close :: Connection -> IO ()
 close (Connection c) = Base.close c
 
-
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
 query_ conn q@(Query que) = do
   result <- exec conn que
   finishQuery conn q result
+
+-- | A version of 'execute' that does not perform query substitution.
+execute_ :: Connection -> Query -> IO ()
+execute_ (Connection conn) (Query que) = do
+  -- TODO bracket one prepare/finalize
+  stmt <- Base.prepare conn (utf8ToString que)
+  res <- Base.step stmt
+  -- TODO assert res == done
+  Base.finalize stmt
 
 
 forM' :: (Ord n, Num n) => n -> n -> (n -> IO a) -> IO [a]
