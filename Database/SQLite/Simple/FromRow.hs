@@ -29,6 +29,8 @@ import Control.Exception (SomeException(..))
 import Control.Monad (replicateM)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import           Database.SQLite.Simple.Types
+import           Database.SQLite.Simple.Ok
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.FromField
 
@@ -63,25 +65,24 @@ class FromRow a where
 
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
-    let unCol (PQ.Col x) = fromIntegral x :: Int
     Row{..} <- ask
     column <- lift get
     lift (put (column + 1))
     let ncols = nfields rowresult
     if (column >= ncols)
     then do
-        let vals = map (\c -> ( typenames ! (unCol c)
+        let vals = map (\c -> ( typenames ! c
                               , fmap ellipsis (getvalue rowresult row c) ))
                        [0..ncols-1]
             convertError = ConversionFailed
-                (show (unCol ncols) ++ " values: " ++ show vals)
-                ("at least " ++ show (unCol column + 1)
+                (show ncols ++ " values: " ++ show vals)
+                ("at least " ++ show (column + 1)
                   ++ " slots in target type")
                 "mismatch between number of columns to \
                 \convert and number in target type"
         lift (lift (Errors [SomeException convertError]))
     else do
-        let typename = typenames ! unCol column
+        let typename = typenames ! column
             result = rowresult
             field = Field{..}
         lift (lift (fieldP field (getvalue result row column)))
@@ -98,7 +99,7 @@ numFieldsRemaining :: RowParser Int
 numFieldsRemaining = RP $ do
     Row{..} <- ask
     column <- lift get
-    return $! (\(PQ.Col x) -> fromIntegral x) (nfields rowresult - column)
+    return $! nfields rowresult - column
 
 instance (FromField a) => FromRow (Only a) where
     fromRow = Only <$> field

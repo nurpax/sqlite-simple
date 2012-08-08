@@ -48,7 +48,7 @@ import qualified Database.SQLite3 as Base
 -- just the field metadata
 
 data Field = Field {
-     result   :: Base.SQLData
+     result   :: Result -- TODO should be tied to sqlite types?
    , column   :: {-# UNPACK #-} !Int
 --   , typename :: !ByteString
    }
@@ -56,14 +56,18 @@ data Field = Field {
 data Row = Row {
      row        :: {-# UNPACK #-} !Int
    , typenames  :: !(V.Vector ByteString)
---   , rowresult  :: !PQ.Result
+   , rowresult  :: Result
    }
 
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad )
 
---getvalue :: PQ.Result -> PQ.Row -> PQ.Column -> Maybe ByteString
---getvalue result row col = unsafePerformIO (PQ.getvalue result row col)
+-- TODO would be better to have some other way of storing results.
+-- This requires storage for all columns x rows.
+data Result = Result [[Maybe ByteString]]
 
---nfields :: PQ.Result -> PQ.Column
---nfields result = unsafePerformIO (PQ.nfields result)
+getvalue :: Result -> Int -> Int -> Maybe ByteString
+getvalue (Result r) r_ c_ = (r !! r_) !! c_
+
+nfields :: Result -> Int
+nfields (Result r) = length . head $ r

@@ -5,6 +5,7 @@ module Database.SQLite.Simple (
   ) where
 
 import Control.Applicative
+import Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
 
 --import Database.SQLite.Simple.ToRow
@@ -23,7 +24,7 @@ close (Connection c) = Base.close c
 query :: (FromRow r)
          => Connection -> Query -> IO [r]
 query conn template =
-  []
+  return []
 
 --  result <- exec conn =<< formatQuery conn template qs
 --  finishQuery conn template result
