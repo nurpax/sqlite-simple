@@ -19,6 +19,8 @@
 
 module Database.SQLite.Simple.Internal where
 
+import Debug.Trace
+
 import Prelude hiding (catch)
 
 import           Control.Applicative
@@ -38,8 +40,17 @@ import           Control.Monad.Trans.Reader
 import qualified Data.Vector as V
 import           System.IO.Unsafe (unsafePerformIO)
 
+import qualified Data.Text          as T
+import qualified Data.Text.Encoding as TE
+
+import           Database.SQLite.Simple.Types
 import           Database.SQLite.Simple.Ok
 import qualified Database.SQLite3 as Base
+
+
+
+data Connection = Connection Base.Database
+
 
 -- | A Field represents metadata about a particular field
 --
@@ -50,7 +61,7 @@ import qualified Database.SQLite3 as Base
 data Field = Field {
      result   :: Result -- TODO should be tied to sqlite types?
    , column   :: {-# UNPACK #-} !Int
---   , typename :: !ByteString
+   , typename :: !ByteString
    }
 
 data Row = Row {
@@ -71,3 +82,32 @@ getvalue (Result r) r_ c_ = (r !! r_) !! c_
 
 nfields :: Result -> Int
 nfields (Result r) = length . head $ r
+
+ntuples :: Result -> Int
+ntuples (Result r) = length r
+
+-- TODO this is horrible a kludge!!  There should be no need for any
+-- conversion here.  Should just take an int and use that value
+-- directly.
+sqldataToByteString :: Base.SQLData -> Maybe ByteString
+sqldataToByteString (Base.SQLInteger v) = Just $ (B8.pack (show v))
+sqldataToByteString (Base.SQLText s) = Just . B8.pack $ s
+
+utf8ToString = T.unpack . TE.decodeUtf8
+
+exec :: Connection -> ByteString -> IO Result
+exec (Connection conn) q = do
+  -- TODO bracket stmt finalize
+  stmt <- Base.prepare conn (utf8ToString q)
+  rows <- takeRows stmt
+  Base.finalize stmt
+  return $ Result rows
+    where
+      takeRows stmt = do
+        res <- Base.step stmt
+        if res == Base.Row then do
+          cols <- Base.columns stmt
+          next <- takeRows stmt
+          return $ (map sqldataToByteString cols) : next
+        else
+          return []

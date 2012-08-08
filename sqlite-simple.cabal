@@ -22,6 +22,10 @@ Library
   Exposed-modules:
      Database.SQLite.Simple
      Database.SQLite.Simple.Ok
+     Database.SQLite.Simple.FromField
+     Database.SQLite.Simple.FromRow
+     Database.SQLite.Simple.Internal
+     Database.SQLite.Simple.Types
 
   Build-depends:
     attoparsec >= 0.8.5.3,
@@ -45,3 +49,26 @@ Library
 source-repository head
   type:     git
   location: http://github.com/nurpax/sqlite-simple
+
+
+test-suite test
+  type:           exitcode-stdio-1.0
+
+  hs-source-dirs: test
+  main-is:        Main.hs
+
+  ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
+
+  extensions: NamedFieldPuns
+            , OverloadedStrings
+            , Rank2Types
+            , RecordWildCards
+
+  build-depends: base
+               , base16-bytestring
+               , bytestring
+               , cryptohash
+               , HUnit
+               , sqlite-simple
+               , text
+               , time

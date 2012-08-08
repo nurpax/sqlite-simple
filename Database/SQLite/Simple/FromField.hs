@@ -33,6 +33,9 @@ module Database.SQLite.Simple.FromField
     , Field
     ) where
 
+-- TODO
+import Debug.Trace
+
 #include "MachDeps.h"
 
 import           Control.Applicative
@@ -111,3 +114,75 @@ instance (FromField a) => FromField (Maybe a) where
 --instance FromField Null where
 --    fromField _ Nothing  = pure Null
 --    fromField f (Just _) = returnError ConversionFailed f "data is not null"
+
+instance FromField Int where
+    fromField = atto okInt $ signed decimal
+
+instance FromField ST.Text where
+    fromField f = doFromField f okText $ (either left pure . ST.decodeUtf8')
+    -- FIXME:  check character encoding
+
+instance FromField [Char] where
+    fromField f dat = ST.unpack <$> fromField f dat
+
+
+newtype Compat = Compat Word64
+
+-- TODO should move these to direct-sqlite?
+data BuiltinType =
+  SQL3Int | SQL3Float | SQL3Text | SQL3Blob
+  deriving (Enum)
+
+mkCompats :: [BuiltinType] -> Compat
+mkCompats = foldl' f (Compat 0) . map mkCompat
+  where f (Compat a) (Compat b) = Compat (a .|. b)
+
+mkCompat :: BuiltinType -> Compat
+mkCompat = Compat . shiftL 1 . fromEnum
+
+compat :: Compat -> Compat -> Bool
+compat (Compat a) (Compat b) = a .&. b /= 0
+
+okText, okBinary, ok16, ok32, ok64, okInt :: Compat
+okText   = mkCompats [SQL3Text]
+okBinary = mkCompats [SQL3Blob]
+ok16 = mkCompats [SQL3Int]
+ok32 = mkCompats [SQL3Int]
+ok64 = mkCompats [SQL3Int]
+#if WORD_SIZE_IN_BITS < 64
+okInt = ok32
+#else
+okInt = ok64
+#endif
+
+doFromField :: forall a . (Typeable a)
+          => Field -> Compat -> (ByteString -> Ok a)
+          -> Maybe ByteString -> Ok a
+doFromField f types cvt (Just bs) | otherwise = cvt bs
+--    | mkCompat typ `compat` types = cvt bs
+--    | otherwise = returnError Incompatible f "types incompatible"
+
+
+doFromField f _ _ _ = returnError UnexpectedNull f ""
+
+
+-- | Given one of the constructors from 'ResultError',  the field,
+--   and an 'errMessage',  this fills in the other fields in the
+--   exception value and returns it in a 'Left . SomeException'
+--   constructor.
+returnError :: forall a err . (Typeable a, Exception err)
+            => (String -> String -> String -> err)
+            -> Field -> String -> Ok a
+returnError mkErr f = left . mkErr (B.unpack (typename f))
+                                   (show (typeOf (undefined :: a)))
+
+atto :: forall a. (Typeable a)
+     => Compat -> Parser a -> Field -> Maybe ByteString
+     -> Ok a
+atto types p0 f dat = doFromField f types (go p0) dat
+  where
+    go :: Parser a -> ByteString -> Ok a
+    go p s =
+        case parseOnly p s of
+          Left err -> returnError ConversionFailed f err
+          Right  v -> pure v
