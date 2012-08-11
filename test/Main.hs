@@ -12,6 +12,7 @@ tests :: [TestEnv -> Test]
 tests =
     [ TestLabel "Simple" . testSimpleSelect
     , TestLabel "Simple" . testSimpleOnePlusOne
+    , TestLabel "Simple" . testSimpleParams
     , TestLabel "Errors" . testErrorsColumns
     ]
 

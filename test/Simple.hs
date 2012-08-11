@@ -1,7 +1,8 @@
 
 module Simple (
     testSimpleOnePlusOne
-  , testSimpleSelect) where
+  , testSimpleSelect
+  , testSimpleParams) where
 
 import Common
 
@@ -28,3 +29,20 @@ testSimpleSelect TestEnv{..} = TestCase $ do
   assertEqual "row count" 2 (length rows)
   assertEqual "int,string" (1, "test string") (rows !! 0)
   assertEqual "int,string" (2, "test string 2") (rows !! 1)
+
+testSimpleParams :: TestEnv -> Test
+testSimpleParams TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE testparams (id INTEGER PRIMARY KEY, t TEXT)"
+  -- TODO another case needed for inserting with real query params
+  [Only i] <- (query conn "SELECT ?" [42 :: Int])  :: IO [Only Int]
+  assertEqual "select int param" 42 i
+  execute_ conn "INSERT INTO testparams (t) VALUES ('test string')"
+  rows <- query conn "SELECT t FROM test1 WHERE id = ?" [(1 :: Int)] :: IO [Only String]
+  assertEqual "row count" 1 (length rows)
+  assertEqual "string" (Only "test string") (head rows)
+  execute_ conn "INSERT INTO testparams (t) VALUES ('test2')"
+  [Only row] <- query conn "SELECT t FROM testparams WHERE id = ?" [(1 :: Int)] :: IO [Only String]
+  assertEqual "select params" "test string" row
+  [Only row] <- query conn "SELECT t FROM testparams WHERE id = ?" [(2 :: Int)] :: IO [Only String]
+  assertEqual "select params" "test2" row
+  return ()

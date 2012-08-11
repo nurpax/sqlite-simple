@@ -5,18 +5,24 @@
 module Database.SQLite.Simple (
     open
   , close
+  , query
   , query_
   , execute_
   , field
   , Query
   , Connection
+  , ToRow
   , FromRow
   , In(..)
   , Binary(..)
   , Only(..)
+  , (:.)(..)
     -- ** Exceptions
   , FormatError(fmtMessage, fmtQuery, fmtParams)
   , ResultError(errSQLType, errHaskellType, errMessage)
+    -- * Helper functions
+  , formatMany
+  , formatQuery
   ) where
 
 import Debug.Trace
@@ -40,13 +46,14 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as TE
 
-import Database.SQLite.Simple.Ok
-import Database.SQLite.Simple.Types
-import Database.SQLite.Simple.Internal
-import Database.SQLite.Simple.FromField
+import Database.SQLite.Simple.FromField (ResultError(..))
 import Database.SQLite.Simple.FromRow (FromRow(..))
+import Database.SQLite.Simple.Internal
+import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (Action(..), inQuotes)
 import Database.SQLite.Simple.ToRow (ToRow(..))
+import Database.SQLite.Simple.Types(
+  Binary(..), In(..), Only(..), Query(..), (:.)(..))
 
 --import Database.SQLite.Simple.ToRow
 import Database.SQLite.Simple.FromRow
@@ -230,6 +237,27 @@ open fname = Connection <$> Base.open fname
 
 close :: Connection -> IO ()
 close (Connection c) = Base.close c
+
+-- | Perform a @SELECT@ or other SQL query that is expected to return
+-- results. All results are retrieved and converted before this
+-- function returns.
+--
+-- When processing large results, this function will consume a lot of
+-- client-side memory.  Consider using 'fold' instead.
+--
+-- Exceptions that may be thrown:
+--
+-- * 'FormatError': the query string could not be formatted correctly.
+--
+-- * 'QueryError': the result contains no columns (i.e. you should be
+--   using 'execute' instead of 'query').
+--
+-- * 'ResultError': result conversion failed.
+query :: (ToRow q, FromRow r)
+         => Connection -> Query -> q -> IO [r]
+query conn template qs = do
+  result <- exec conn =<< formatQuery conn template qs
+  finishQuery conn template result
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
