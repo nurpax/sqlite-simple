@@ -102,9 +102,10 @@ exec (Connection conn) q = do
     where
       takeRows stmt = do
         res <- Base.step stmt
-        if res == Base.Row then do
-          cols <- Base.columns stmt
-          next <- takeRows stmt
-          return $ (map sqldataToByteString cols) : next
-        else
-          return []
+        case res of
+          Base.Row -> do
+            cols <- Base.columns stmt
+            next <- takeRows stmt
+            return $ (map sqldataToByteString cols) : next
+          Base.Done ->
+            return []
