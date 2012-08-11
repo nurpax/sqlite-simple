@@ -68,12 +68,6 @@ data Row = Row {
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad )
 
--- TODO would be better to have some other way of storing results.
--- This requires storage for all columns x rows.
---
--- Would be nice to get rid of getvalue, nfields and ntuples
--- altogether.  This is legacy from postgresql-simple where these
--- functions actually operate on actual PostgreSQL Result objects.
 type Result = [[Base.SQLData]]
 
 gettypename :: Base.SQLData -> ByteString
@@ -95,9 +89,8 @@ utf8ToString :: ByteString -> String
 utf8ToString = T.unpack . TE.decodeUtf8
 
 exec :: Connection -> ByteString -> IO Result
-exec (Connection conn) q = do
-  rows <- bracket (Base.prepare conn (utf8ToString q)) Base.finalize takeRows
-  return $ rows
+exec (Connection conn) q =
+  bracket (Base.prepare conn (utf8ToString q)) Base.finalize takeRows
     where
       takeRows stmt = do
         res <- Base.step stmt
