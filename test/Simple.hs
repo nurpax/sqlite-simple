@@ -1,11 +1,19 @@
 
-module Simple (testSimpleSelect) where
+module Simple (
+    testSimpleOnePlusOne
+  , testSimpleSelect) where
 
 import Common
 
+-- Simplest SELECT
+testSimpleOnePlusOne :: TestEnv -> Test
+testSimpleOnePlusOne TestEnv{..} = TestCase $ do
+  rows <- query_ conn "SELECT 1+1" :: IO [Only Int]
+  assertEqual "row count" 1 (length rows)
+  assertEqual "value" (Only 2) (head rows)
+
 testSimpleSelect :: TestEnv -> Test
 testSimpleSelect TestEnv{..} = TestCase $ do
-  -- TODO use execute (or one that doesn't return values!)
   execute_ conn "CREATE TABLE test1 (id INTEGER PRIMARY KEY, t TEXT)"
   -- TODO another case needed for inserting with real query params
   execute_ conn "INSERT INTO test1 (t) VALUES ('test string')"

@@ -10,6 +10,7 @@ import Simple
 tests :: [TestEnv -> Test]
 tests =
     [ TestLabel "Simple" . testSimpleSelect
+    , TestLabel "Simple" . testSimpleOnePlusOne
     ]
 
 -- | Action for connecting to the database that will be used for testing.
