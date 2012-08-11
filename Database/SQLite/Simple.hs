@@ -4,6 +4,7 @@
 
 ------------------------------------------------------------------------------
 -- |
+-- Module:      Database.SQLite.Simple
 -- Copyright:   (c) 2011 MailRank, Inc.
 --              (c) 2011-2012 Leon P Smith
 --              (c) 2012 Janne Hellsten
@@ -12,11 +13,11 @@
 -- Stability:   experimental
 -- Portability: portable
 --
--- Basic types.
---
 ------------------------------------------------------------------------------
 
 module Database.SQLite.Simple (
+    -- * Examples of use
+    -- $use
     open
   , close
   , query
@@ -40,8 +41,6 @@ module Database.SQLite.Simple (
   , formatMany
   , formatQuery
   ) where
-
-import Debug.Trace
 
 import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromChar)
@@ -71,8 +70,37 @@ import Database.SQLite.Simple.ToRow (ToRow(..))
 import Database.SQLite.Simple.Types(
   Binary(..), In(..), Only(..), Query(..), (:.)(..))
 
---import Database.SQLite.Simple.ToRow
 import Database.SQLite.Simple.FromRow
+
+{- $use
+Create a test database by copy&pasting the below snippet to your
+shell:
+
+@
+sqlite3 test.db \"CREATE TABLE test (id INTEGER PRIMARY KEY, str text);\\
+INSERT INTO test (str) VALUES ('test string');\"
+@
+
+..and access it from Haskell:
+
+@
+import Control.Applicative
+import Database.SQLite.Simple
+import Database.SQLite.Simple.FromRow
+
+data TestField = TestField Int String deriving (Show)
+
+instance FromRow TestField where
+  fromRow = TestField \<$\> field \<*\> field
+
+main :: IO ()
+main = do
+  conn <- open \"test.db\"
+  r <- query_ conn \"SELECT * from test\" :: IO [TestField]
+  mapM_ print r
+  close conn
+@
+-}
 
 -- | Exception thrown if a 'Query' could not be formatted correctly.
 -- This may occur if the number of \'@?@\' characters in the query
@@ -252,9 +280,14 @@ buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
                                   show (length xs) ++ " parameters") q xs
 
 
+-- | Open a database connection to a given file.  Will throw an
+-- exception if it cannot connect.
+--
+-- Every 'open' must be closed with a call to 'close'.
 open :: String -> IO Connection
 open fname = Connection <$> Base.open fname
 
+-- | Close a database connection.
 close :: Connection -> IO ()
 close (Connection c) = Base.close c
 

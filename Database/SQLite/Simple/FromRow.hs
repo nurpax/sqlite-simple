@@ -2,6 +2,7 @@
 
 ------------------------------------------------------------------------------
 -- |
+-- Module:      Database.SQLite.Simple.FromRow
 -- Copyright:   (c) 2011-2012 Leon P Smith
 --              (c) 2012 Janne Hellsten
 -- License:     BSD3

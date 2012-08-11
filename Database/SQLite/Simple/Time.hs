@@ -1,5 +1,6 @@
 ------------------------------------------------------------------------------
 -- |
+-- Module:      Database.SQLite.Simple.Time
 -- Copyright:   (c) 2012 Leon P Smith
 --              (c) 2012 Janne Hellsten
 -- License:     BSD3

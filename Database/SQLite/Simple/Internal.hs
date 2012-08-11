@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards, DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 ------------------------------------------------------------------------------
 -- |
+-- Module:      Database.SQLite.Simple.Internal
 -- Copyright:   (c) 2011-2012 Leon P Smith
 --              (c) 2012 Janne Hellsten
 -- License:     BSD3

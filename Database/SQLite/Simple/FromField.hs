@@ -4,6 +4,7 @@
 
 ------------------------------------------------------------------------------
 -- |
+-- Module:      Database.SQLite.Simple.FromField
 -- Copyright:   (c) 2011 MailRank, Inc.
 --              (c) 2011-2012 Leon P Smith
 --              (c) 2012 Janne Hellsten
