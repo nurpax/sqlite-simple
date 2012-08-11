@@ -27,6 +27,7 @@ Library
      Database.SQLite.Simple.ToField
      Database.SQLite.Simple.ToRow
      Database.SQLite.Simple.Types
+     Database.SQLite.Simple.Time
 
   Build-depends:
     attoparsec >= 0.8.5.3,

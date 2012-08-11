@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -20,6 +21,8 @@ module Database.SQLite.Simple (
 
 import Debug.Trace
 
+import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
+import Blaze.ByteString.Builder.Char8 (fromChar)
 import Control.Applicative
 import Control.Exception
   ( Exception, onException, throw, throwIO, finally, bracket )
@@ -27,16 +30,23 @@ import Control.Monad (void)
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State.Strict
 import Data.ByteString (ByteString)
+import Data.List (intersperse)
+import Data.Monoid (mappend, mconcat)
 import Data.Typeable (Typeable)
 import qualified Data.Vector as V
 import Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
+import qualified Data.ByteString.Char8 as B
+import qualified Data.Text          as T
+import qualified Data.Text.Encoding as TE
 
 import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.Types
 import Database.SQLite.Simple.Internal
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.FromRow (FromRow(..))
+import Database.SQLite.Simple.ToField (Action(..), inQuotes)
+import Database.SQLite.Simple.ToRow (ToRow(..))
 
 --import Database.SQLite.Simple.ToRow
 import Database.SQLite.Simple.FromRow
@@ -49,6 +59,171 @@ data FormatError = FormatError {
     , fmtQuery :: Query
     , fmtParams :: [ByteString]
     } deriving (Eq, Show, Typeable)
+
+instance Exception FormatError
+
+-- | Format a query string.
+--
+-- This function is exposed to help with debugging and logging. Do not
+-- use it to prepare queries for execution.
+--
+-- String parameters are escaped according to the character set in use
+-- on the 'Connection'.
+--
+-- Throws 'FormatError' if the query string could not be formatted
+-- correctly.
+formatQuery :: ToRow q => Connection -> Query -> q -> IO ByteString
+formatQuery conn q@(Query template) qs
+    | null xs && '?' `B.notElem` template = return template
+    | otherwise = toByteString <$> buildQuery conn q template xs
+  where xs = toRow qs
+
+-- | Format a query string with a variable number of rows.
+--
+-- This function is exposed to help with debugging and logging. Do not
+-- use it to prepare queries for execution.
+--
+-- The query string must contain exactly one substitution group,
+-- identified by the SQL keyword \"@VALUES@\" (case insensitive)
+-- followed by an \"@(@\" character, a series of one or more \"@?@\"
+-- characters separated by commas, and a \"@)@\" character. White
+-- space in a substitution group is permitted.
+--
+-- Throws 'FormatError' if the query string could not be formatted
+-- correctly.
+formatMany :: (ToRow q) => Connection -> Query -> [q] -> IO ByteString
+formatMany _ q [] = fmtError "no rows supplied" q []
+formatMany conn q@(Query template) qs = do
+  case parseTemplate template of
+    Just (before, qbits, after) -> do
+      bs <- mapM (buildQuery conn q qbits . toRow) qs
+      return . toByteString . mconcat $ fromByteString before :
+                                        intersperse (fromChar ',') bs ++
+                                        [fromByteString after]
+    Nothing -> fmtError "syntax error in query template for executeMany" q []
+
+-- Split the input string into three pieces, @before@, @qbits@, and @after@,
+-- following this grammar:
+--
+-- start: ^ before qbits after $
+--     before: ([^?]* [^?\w])? 'VALUES' \s*
+--     qbits:  '(' \s* '?' \s* (',' \s* '?' \s*)* ')'
+--     after:  [^?]*
+--
+-- \s: [ \t\n\r\f]
+-- \w: [A-Z] | [a-z] | [\x80-\xFF] | '_' | '$' | [0-9]
+--
+-- This would be much more concise with some sort of regex engine.
+-- 'formatMany' used to use pcre-light instead of this hand-written parser,
+-- but pcre is a hassle to install on Windows.
+parseTemplate :: ByteString -> Maybe (ByteString, ByteString, ByteString)
+parseTemplate template =
+    -- Convert input string to uppercase, to facilitate searching.
+    search $ B.map toUpper_ascii template
+  where
+    -- Search for the next occurrence of "VALUES"
+    search bs =
+        case B.breakSubstring "VALUES" bs of
+            (x, y)
+                -- If "VALUES" is not present in the string, or any '?' characters
+                -- were encountered prior to it, fail.
+                | B.null y || ('?' `B.elem` x)
+               -> Nothing
+
+                -- If "VALUES" is preceded by an identifier character (a.k.a. \w),
+                -- try the next occurrence.
+                | not (B.null x) && isIdent (B.last x)
+               -> search $ B.drop 6 y
+
+                -- Otherwise, we have a legitimate "VALUES" token.
+                | otherwise
+               -> parseQueryBits $ skipSpace $ B.drop 6 y
+
+    -- Parse '(' \s* '?' \s* .  If this doesn't match
+    -- (and we don't consume a '?'), look for another "VALUES".
+    --
+    -- qb points to the open paren (if present), meaning it points to the
+    -- beginning of the "qbits" production described above.  This is why we
+    -- pass it down to finishQueryBits.
+    parseQueryBits qb
+        | Just ('(', skipSpace -> bs1) <- B.uncons qb
+        , Just ('?', skipSpace -> bs2) <- B.uncons bs1
+        = finishQueryBits qb bs2
+        | otherwise
+        = search qb
+
+    -- Parse (',' \s* '?' \s*)* ')' [^?]* .
+    --
+    -- Since we've already consumed at least one '?', there's no turning back.
+    -- The parse has to succeed here, or the whole thing fails
+    -- (because we don't allow '?' to appear outside of the VALUES list).
+    finishQueryBits qb bs0
+        | Just (')', bs1) <- B.uncons bs0
+        = if '?' `B.elem` bs1
+              then Nothing
+              else Just $ slice3 template qb bs1
+        | Just (',', skipSpace -> bs1) <- B.uncons bs0
+        , Just ('?', skipSpace -> bs2) <- B.uncons bs1
+        = finishQueryBits qb bs2
+        | otherwise
+        = Nothing
+
+    -- Slice a string into three pieces, given the start offset of the second
+    -- and third pieces.  Each "offset" is actually a tail of the uppercase
+    -- version of the template string.  Its length is used to infer the offset.
+    --
+    -- It is important to note that we only slice the original template.
+    -- We don't want our all-caps trick messing up the actual query string.
+    slice3 source p1 p2 =
+        (s1, s2, source'')
+      where
+        (s1, source')  = B.splitAt (B.length source - B.length p1) source
+        (s2, source'') = B.splitAt (B.length p1     - B.length p2) source'
+
+    toUpper_ascii c | c >= 'a' && c <= 'z' = toEnum (fromEnum c - 32)
+                    | otherwise            = c
+
+    -- Based on the definition of {ident_cont} in src/backend/parser/scan.l
+    -- in the PostgreSQL source.  No need to check [a-z], since we converted
+    -- the whole string to uppercase.
+    isIdent c = (c >= '0'    && c <= '9')
+             || (c >= 'A'    && c <= 'Z')
+             || (c >= '\x80' && c <= '\xFF')
+             || c == '_'
+             || c == '$'
+
+    -- Based on {space} in scan.l
+    isSpace_ascii c = (c == ' ') || (c >= '\t' && c <= '\r')
+
+    skipSpace = B.dropWhile isSpace_ascii
+
+--escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+--escapeStringConn conn s =
+--    withConnection conn $ \c ->
+--    PQ.escapeStringConn c s >>= checkError c
+
+--escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+--escapeByteaConn conn s =
+--    withConnection conn $ \c ->
+--    PQ.escapeByteaConn c s >>= checkError c
+
+buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
+buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
+  where quote = either (\msg -> fmtError (utf8ToString msg) q xs)
+                       (inQuotes . fromByteString)
+        utf8ToString = T.unpack . TE.decodeUtf8
+        sub (Plain  b)      = pure b
+        sub (Escape s)      = error "NOT IMPLEMENTED" --quote <$> escapeStringConn conn s
+        sub (EscapeByteA s) = error "NOT IMPLEMENTED" ----quote <$> escapeByteaConn conn s
+        sub (Many  ys)      = mconcat <$> mapM sub ys
+        split s = fromByteString h : if B.null t then [] else split (B.tail t)
+            where (h,t) = B.break (=='?') s
+        zipParams (t:ts) (p:ps) = t `mappend` p `mappend` zipParams ts ps
+        zipParams [t] []        = t
+        zipParams _ _ = fmtError (show (B.count '?' template) ++
+                                  " '?' characters, but " ++
+                                  show (length xs) ++ " parameters") q xs
+
 
 open :: String -> IO Connection
 open fname = Connection <$> Base.open fname
@@ -91,3 +266,14 @@ finishQuery conn q rows =
           Errors xs  -> throwIO $ ManyErrors xs
 
       ncols = length . head $ rows
+
+fmtError :: String -> Query -> [Action] -> a
+fmtError msg q xs = throw FormatError {
+                      fmtMessage = msg
+                    , fmtQuery = q
+                    , fmtParams = map twiddle xs
+                    }
+  where twiddle (Plain b)       = toByteString b
+        twiddle (Escape s)      = s
+        twiddle (EscapeByteA s) = s
+        twiddle (Many ys)       = B.concat (map twiddle ys)
