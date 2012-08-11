@@ -45,7 +45,7 @@ import Data.Vector ((!))
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.
 --
--- Note that instances can defined outside of postgresql-simple,  which is
+-- Note that instances can defined outside of sqlite-simple,  which is
 -- often useful.   For example, here's an instance for a user-defined pair:
 --
 -- @data User = User { name :: String, fileQuota :: Int }
@@ -58,9 +58,8 @@ import Data.Vector ((!))
 -- in a single row of the query result.  Otherwise,  a 'ConversionFailed'
 -- exception will be thrown.
 --
--- Note that 'field' evaluates it's result to WHNF, so the caveats listed in
--- previous versions of postgresql-simple no longer apply.  Instead, look
--- at the caveats associated with user-defined implementations of 'fromRow'.
+-- Note the caveats associated with user-defined implementations of
+-- 'fromRow'.
 
 class FromRow a where
     fromRow :: RowParser a

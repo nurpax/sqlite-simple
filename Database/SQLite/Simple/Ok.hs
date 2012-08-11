@@ -10,8 +10,7 @@
 -- Stability   :  experimental
 --
 -- The 'Ok' type is a simple error handler,  basically equivalent to
--- @Either [SomeException]@.   This type (without the list) was used to
--- handle conversion errors in early versions of postgresql-simple.
+-- @Either [SomeException]@.
 --
 -- One of the primary reasons why this type  was introduced is that
 -- @Either SomeException@ had not been provided an instance for 'Alternative',
