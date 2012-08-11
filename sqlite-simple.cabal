@@ -76,7 +76,6 @@ test-suite test
   build-depends: base
                , base16-bytestring
                , bytestring
-               , cryptohash
                , HUnit
                , sqlite-simple
                , text
