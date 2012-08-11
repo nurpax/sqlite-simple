@@ -80,28 +80,26 @@ forM' lo hi m = loop hi []
            loop (n-1) (a:as)
 
 finishQuery :: (FromRow r) => Connection -> Query -> Result -> IO [r]
-finishQuery conn q result = do
+finishQuery conn q rows = do
   -- TODO handle sqlite errors, this just skips all of that
-  let ncols = nfields result
-      nrows = ntuples result
-  typenames <- V.generateM ncols (\col -> return "NOT IMPLEMENTED")
-  -- TODO missing typenames!!
---                           (\col -> do
---                              getTypename conn =<< PQ.ftype result col)
-  forM' 0 (nrows-1) $ \row -> do
-     let rw = Row row typenames result
-     case runStateT (runReaderT (unRP fromRow) rw) 0 of
-       Ok (val,col) | col == ncols -> return val
-                    | otherwise -> do
-                        vals <- forM' 0 (ncols-1) $ \c -> do
-                            let v = getvalue result row c
-                            return ( typenames V.! c
-                                   , v )
-                        throw (ConversionFailed
-                         (show ncols ++ " values: " ++ show vals)
-                         (show col ++ " slots in target type")
-                         "mismatch between number of columns to \
-                         \convert and number in target type")
-       Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
-       Errors [x] -> throwIO x
-       Errors xs  -> throwIO $ ManyErrors xs
+  mapM doRow $ zip rows [0..]
+    where
+      doRow (rowRes, rowNdx) = do
+        let rw = Row rowNdx rows
+        case runStateT (runReaderT (unRP fromRow) rw) 0 of
+          Ok (val,col) | col == ncols -> return val
+                       | otherwise -> do
+                           vals <- forM' 0 (ncols-1) $ \c -> do
+                               return ( gettypename $ rowRes !! c
+                                      , rowRes !! c )
+                           throw (ConversionFailed
+                             (show ncols ++ " values: " ++ show vals)
+                             (show col ++ " slots in target type")
+                             "mismatch between number of columns to \
+                             \convert and number in target type")
+          Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
+          Errors [x] -> throwIO x
+          Errors xs  -> throwIO $ ManyErrors xs
+
+      ncols = nfields rows
+      nrows = ntuples rows

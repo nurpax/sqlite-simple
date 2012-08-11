@@ -71,21 +71,20 @@ fieldWith fieldP = RP $ do
     let ncols = nfields rowresult
     if (column >= ncols)
     then do
-        let vals = map (\c -> ( typenames ! c
-                              , fmap ellipsis (getvalue rowresult row c) ))
-                       [0..ncols-1]
-            convertError = ConversionFailed
-                (show ncols ++ " values: " ++ show vals)
-                ("at least " ++ show (column + 1)
-                  ++ " slots in target type")
-                "mismatch between number of columns to \
-                \convert and number in target type"
-        lift (lift (Errors [SomeException convertError]))
+      let vals = map (\c -> ( gettypename (((rowresult !! row) !! c))
+                            , fmap ellipsis (getvalue rowresult row c) ))
+                     [0..ncols-1]
+          convertError = ConversionFailed
+              (show ncols ++ " values: " ++ show vals)
+              ("at least " ++ show (column + 1)
+                ++ " slots in target type")
+              "mismatch between number of columns to \
+              \convert and number in target type"
+      lift (lift (Errors [SomeException convertError]))
     else do
-        let typename = typenames ! column
-            result = rowresult
-            field = Field{..}
-        lift (lift (fieldP field (getvalue result row column)))
+      let result = rowresult
+          field = Field{..}
+      lift (lift (fieldP field (getvalue result row column)))
 
 field :: FromField a => RowParser a
 field = fieldWith fromField

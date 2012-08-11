@@ -61,12 +61,10 @@ data Connection = Connection Base.Database
 data Field = Field {
      result   :: Result -- TODO should be tied to sqlite types?
    , column   :: {-# UNPACK #-} !Int
-   , typename :: !ByteString
    }
 
 data Row = Row {
      row        :: {-# UNPACK #-} !Int
-   , typenames  :: !(V.Vector ByteString)
    , rowresult  :: Result
    }
 
@@ -74,17 +72,30 @@ newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad )
 
 -- TODO would be better to have some other way of storing results.
--- This requires storage for all columns x rows.
-data Result = Result [[Maybe ByteString]]
+-- This requires storage for all columns x rows.  Also nfields/ntuples
+-- will need to force the result list, so I suppose we're pretty much
+-- guaranteed to always copy all the rows into memory.
+--
+-- Would be nice to get rid of getvalue, nfields and ntuples
+-- altogether.  This is legacy from postgresql-simple where these
+-- functions actually operate on actual PostgreSQL Result objects.
+type Result = [[Base.SQLData]]
 
 getvalue :: Result -> Int -> Int -> Maybe ByteString
-getvalue (Result r) r_ c_ = (r !! r_) !! c_
+getvalue r r_ c_ = sqldataToByteString $ (r !! r_) !! c_
 
 nfields :: Result -> Int
-nfields (Result r) = length . head $ r
+nfields r = length . head $ r
 
 ntuples :: Result -> Int
-ntuples (Result r) = length r
+ntuples r = length r
+
+gettypename :: Base.SQLData -> ByteString
+gettypename (Base.SQLInteger _) = "INTEGER"
+gettypename (Base.SQLFloat _) = "FLOAT"
+gettypename (Base.SQLText _) = "TEXT"
+gettypename (Base.SQLBlob _) = "BLOB"
+gettypename Base.SQLNull = "NULL"
 
 -- TODO this is horrible a kludge!!  There should be no need for any
 -- conversion here.  Should just take an int and use that value
@@ -92,13 +103,14 @@ ntuples (Result r) = length r
 sqldataToByteString :: Base.SQLData -> Maybe ByteString
 sqldataToByteString (Base.SQLInteger v) = Just $ (B8.pack (show v))
 sqldataToByteString (Base.SQLText s) = Just . B8.pack $ s
+sqldataToByteString Base.SQLNull = Nothing
 
 utf8ToString = T.unpack . TE.decodeUtf8
 
 exec :: Connection -> ByteString -> IO Result
 exec (Connection conn) q = do
   rows <- bracket (Base.prepare conn (utf8ToString q)) Base.finalize takeRows
-  return $ Result rows
+  return $ rows
     where
       takeRows stmt = do
         res <- Base.step stmt
@@ -106,6 +118,6 @@ exec (Connection conn) q = do
           Base.Row -> do
             cols <- Base.columns stmt
             next <- takeRows stmt
-            return $ (map sqldataToByteString cols) : next
+            return $ cols : next
           Base.Done ->
             return []

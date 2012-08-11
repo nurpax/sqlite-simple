@@ -166,6 +166,11 @@ doFromField f types cvt (Just bs) | otherwise = cvt bs
 doFromField f _ _ _ = returnError UnexpectedNull f ""
 
 
+-- TODO should pass in SQLData data here, this will be enough to
+-- return a meaningful string describing the data type
+fieldTypename :: Field -> String
+fieldTypename f = "fieldTypename: NOT IMPLEMENTED"
+
 -- | Given one of the constructors from 'ResultError',  the field,
 --   and an 'errMessage',  this fills in the other fields in the
 --   exception value and returns it in a 'Left . SomeException'
@@ -173,7 +178,7 @@ doFromField f _ _ _ = returnError UnexpectedNull f ""
 returnError :: forall a err . (Typeable a, Exception err)
             => (String -> String -> String -> err)
             -> Field -> String -> Ok a
-returnError mkErr f = left . mkErr (B.unpack (typename f))
+returnError mkErr f = left . mkErr (fieldTypename f)
                                    (show (typeOf (undefined :: a)))
 
 atto :: forall a. (Typeable a)
