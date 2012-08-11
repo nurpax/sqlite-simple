@@ -3,11 +3,10 @@
 
 ------------------------------------------------------------------------------
 -- |
--- Module      :  Database.SQLite.Simple.Ok
 -- Copyright   :  (c) 2012 Leon P Smith
+--                (c) 2012 Janne Hellsten
 -- License     :  BSD3
---
--- Maintainer  :  leon@melding-monads.com
+-- Maintainer  :  Janne Hellsten <jjhellst@gmail.com>
 -- Stability   :  experimental
 --
 -- The 'Ok' type is a simple error handler,  basically equivalent to

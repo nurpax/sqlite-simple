@@ -4,11 +4,11 @@
 
 ------------------------------------------------------------------------------
 -- |
--- Module:      Database.SQLite.Simple.FromField
 -- Copyright:   (c) 2011 MailRank, Inc.
 --              (c) 2011-2012 Leon P Smith
+--              (c) 2012 Janne Hellsten
 -- License:     BSD3
--- Maintainer:  Leon P Smith <leon@melding-monads.com>
+-- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
 -- Stability:   experimental
 -- Portability: portable
 --

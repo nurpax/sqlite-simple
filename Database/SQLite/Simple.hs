@@ -2,6 +2,20 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+------------------------------------------------------------------------------
+-- |
+-- Copyright:   (c) 2011 MailRank, Inc.
+--              (c) 2011-2012 Leon P Smith
+--              (c) 2012 Janne Hellsten
+-- License:     BSD3
+-- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
+-- Stability:   experimental
+-- Portability: portable
+--
+-- Basic types.
+--
+------------------------------------------------------------------------------
+
 module Database.SQLite.Simple (
     open
   , close
@@ -297,7 +311,6 @@ execute_ (Connection conn) (Query que) =
 
 finishQuery :: (FromRow r) => Connection -> Query -> Result -> IO [r]
 finishQuery conn q rows =
-  -- TODO handle sqlite errors, this just skips all of that
   mapM doRow $ zip rows [0..]
     where
       doRow (rowRes, rowNdx) = do

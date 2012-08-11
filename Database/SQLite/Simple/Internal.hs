@@ -1,15 +1,15 @@
 {-# LANGUAGE RecordWildCards, DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 ------------------------------------------------------------------------------
 -- |
--- Module:      Database.SQLite.Simple.Internal
 -- Copyright:   (c) 2011-2012 Leon P Smith
+--              (c) 2012 Janne Hellsten
 -- License:     BSD3
--- Maintainer:  Leon P Smith <leon@melding-monads.com>
+-- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
 -- Stability:   experimental
 -- Portability: portable
 --
 -- Internal bits.  This interface is less stable and can change at any time.
--- In particular this means that while the rest of the postgresql-simple
+-- In particular this means that while the rest of the sqlite-simple
 -- package endeavors to follow the package versioning policy,  this module
 -- does not.  Also, at the moment there are things in here that aren't
 -- particularly internal and are exported elsewhere;  these will eventually
@@ -47,10 +47,7 @@ import           Database.SQLite.Simple.Types
 import           Database.SQLite.Simple.Ok
 import qualified Database.SQLite3 as Base
 
-
-
 data Connection = Connection Base.Database
-
 
 -- | A Field represents metadata about a particular field
 --
@@ -94,6 +91,7 @@ sqldataToByteString (Base.SQLInteger v) = Just $ (B8.pack (show v))
 sqldataToByteString (Base.SQLText s) = Just . B8.pack $ s
 sqldataToByteString Base.SQLNull = Nothing
 
+utf8ToString :: ByteString -> String
 utf8ToString = T.unpack . TE.decodeUtf8
 
 exec :: Connection -> ByteString -> IO Result
