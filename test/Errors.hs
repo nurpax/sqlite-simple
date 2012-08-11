@@ -42,6 +42,8 @@ testErrorsInvalidParams TestEnv{..} = TestCase $ do
   execute_ conn "INSERT INTO invparams (t) VALUES (:v)"
   -- In this case, we have two bound params but only one given to
   -- execute.  This should cause an error.
-  assertFormatErrorCaught (execute conn "INSERT INTO invparams (id, t) VALUES (:i, :v)" [3 :: Int])
+  assertFormatErrorCaught (execute conn "INSERT INTO invparams (id, t) VALUES (?, ?)" [3 :: Int])
+  -- TODO we should actually disallow ?1,?2, :v etc since our input
+  -- query params don't specify any binding to names/indices.
   [Only row] <- query_ conn "SELECT t FROM invparams" :: IO [Only (Maybe String)]
   assertEqual "string" Nothing row
