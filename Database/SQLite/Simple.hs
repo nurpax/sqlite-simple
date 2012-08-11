@@ -15,6 +15,7 @@ module Database.SQLite.Simple (
   , Only(..)
     -- ** Exceptions
   , FormatError(fmtMessage, fmtQuery, fmtParams)
+  , ResultError(errSQLType, errHaskellType, errMessage)
   ) where
 
 import Debug.Trace
