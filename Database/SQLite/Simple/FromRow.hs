@@ -83,7 +83,6 @@ fieldWith fieldP = RP $ do
               \convert and number in target type"
       lift (lift (Errors [SomeException convertError]))
     else do
-      -- TODO have rowresult be just one row!!
       -- TODO get rid of sqldataToByteString here - the types are just wrong for fieldP
       let r = rowresult !! column
           field = Field r column
