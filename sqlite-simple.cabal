@@ -57,6 +57,7 @@ test-suite test
   other-modules:
     Common
     Simple
+    Errors
 
   ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
 

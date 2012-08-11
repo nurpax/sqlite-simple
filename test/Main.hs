@@ -6,11 +6,13 @@ import System.Exit                  (exitFailure)
 import System.IO
 
 import Simple
+import Errors
 
 tests :: [TestEnv -> Test]
 tests =
     [ TestLabel "Simple" . testSimpleSelect
     , TestLabel "Simple" . testSimpleOnePlusOne
+    , TestLabel "Errors" . testErrorsColumns
     ]
 
 -- | Action for connecting to the database that will be used for testing.
