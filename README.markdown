@@ -38,6 +38,9 @@ main = do
   close conn
 ```
 
+More simple usage examples can be found from [sqlite-simple unit
+tests](https://github.com/nurpax/sqlite-simple/blob/master/test/Simple.hs)
+
 Credits
 -------
 
