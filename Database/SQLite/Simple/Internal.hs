@@ -72,9 +72,7 @@ newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad )
 
 -- TODO would be better to have some other way of storing results.
--- This requires storage for all columns x rows.  Also nfields/ntuples
--- will need to force the result list, so I suppose we're pretty much
--- guaranteed to always copy all the rows into memory.
+-- This requires storage for all columns x rows.
 --
 -- Would be nice to get rid of getvalue, nfields and ntuples
 -- altogether.  This is legacy from postgresql-simple where these
@@ -86,9 +84,6 @@ getvalue r r_ c_ = sqldataToByteString $ (r !! r_) !! c_
 
 nfields :: Result -> Int
 nfields r = length . head $ r
-
-ntuples :: Result -> Int
-ntuples r = length r
 
 gettypename :: Base.SQLData -> ByteString
 gettypename (Base.SQLInteger _) = "INTEGER"
