@@ -97,10 +97,7 @@ utf8ToString = T.unpack . TE.decodeUtf8
 
 exec :: Connection -> ByteString -> IO Result
 exec (Connection conn) q = do
-  -- TODO bracket stmt finalize
-  stmt <- Base.prepare conn (utf8ToString q)
-  rows <- takeRows stmt
-  Base.finalize stmt
+  rows <- bracket (Base.prepare conn (utf8ToString q)) Base.finalize takeRows
   return $ Result rows
     where
       takeRows stmt = do
