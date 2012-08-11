@@ -124,9 +124,9 @@ instance Exception FormatError
 -- Throws 'FormatError' if the query string could not be formatted
 -- correctly.
 formatQuery :: ToRow q => Connection -> Query -> q -> IO ByteString
-formatQuery conn q@(Query template) qs
+formatQuery _conn q@(Query template) qs
     | null xs && '?' `B.notElem` template = return template
-    | otherwise = toByteString <$> buildQuery conn q template xs
+    | otherwise = toByteString <$> buildQuery q template xs
   where xs = toRow qs
 
 -- | Format a query string with a variable number of rows.
@@ -144,10 +144,10 @@ formatQuery conn q@(Query template) qs
 -- correctly.
 formatMany :: (ToRow q) => Connection -> Query -> [q] -> IO ByteString
 formatMany _ q [] = fmtError "no rows supplied" q []
-formatMany conn q@(Query template) qs = do
+formatMany _conn q@(Query template) qs = do
   case parseTemplate template of
     Just (before, qbits, after) -> do
-      bs <- mapM (buildQuery conn q qbits . toRow) qs
+      bs <- mapM (buildQuery q qbits . toRow) qs
       return . toByteString . mconcat $ fromByteString before :
                                         intersperse (fromChar ',') bs ++
                                         [fromByteString after]
@@ -262,14 +262,14 @@ parseTemplate template =
 escapeStringSql :: ByteString -> ByteString
 escapeStringSql s = B.concatMap (\c -> if c == '\'' then "''" else B.singleton c) s
 
-buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
-buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
+buildQuery :: Query -> ByteString -> [Action] -> IO Builder
+buildQuery q template xs = zipParams (split template) <$> mapM sub xs
   where quote = either (\msg -> fmtError (utf8ToString msg) q xs)
                        (inQuotes . fromByteString)
         utf8ToString = T.unpack . TE.decodeUtf8
         sub (Plain  b)      = pure b
         sub (Escape s)      = quote <$> return (Right (escapeStringSql s))
-        sub (EscapeByteA s) = error "NOT IMPLEMENTED" ----quote <$> escapeByteaConn conn s
+        sub (EscapeByteA _) = error "NOT IMPLEMENTED" ----quote <$> escapeByteaConn conn s
         sub (Many  ys)      = mconcat <$> mapM sub ys
         split s = fromByteString h : if B.null t then [] else split (B.tail t)
             where (h,t) = B.break (=='?') s
@@ -326,13 +326,13 @@ query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn template qs = do
   result <- exec conn =<< formatQuery conn template qs
-  finishQuery conn template result
+  finishQuery result
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
-query_ conn q@(Query que) = do
+query_ conn (Query que) = do
   result <- exec conn que
-  finishQuery conn q result
+  finishQuery result
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
@@ -342,8 +342,8 @@ execute_ (Connection conn) (Query que) =
       go stmt = void $ Base.step stmt
 
 
-finishQuery :: (FromRow r) => Connection -> Query -> Result -> IO [r]
-finishQuery conn q rows =
+finishQuery :: (FromRow r) => Result -> IO [r]
+finishQuery rows =
   mapM doRow $ zip rows [0..]
     where
       doRow (rowRes, rowNdx) = do
