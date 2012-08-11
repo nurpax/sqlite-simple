@@ -7,6 +7,8 @@ module Database.SQLite.Simple (
   , close
   , query
   , query_
+  , execute
+  , executeMany
   , execute_
   , field
   , Query
@@ -204,15 +206,19 @@ parseTemplate template =
 
     skipSpace = B.dropWhile isSpace_ascii
 
---escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
---escapeStringConn conn s =
---    withConnection conn $ \c ->
---    PQ.escapeStringConn c s >>= checkError c
-
 --escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
 --escapeByteaConn conn s =
 --    withConnection conn $ \c ->
 --    PQ.escapeByteaConn c s >>= checkError c
+
+-- Escape string for sqlite
+--
+-- TODO It would be REALLY good to replace the use of this function by
+-- either sqlite3_mprintf '%q' or better yet, using SQLite3's
+-- parameter binding instead of our own substitution.  Rolling your
+-- own escaping is prone to bugs that leave SQL injection holes.
+escapeStringSql :: ByteString -> ByteString
+escapeStringSql s = B.concatMap (\c -> if c == '\'' then "''" else B.singleton c) s
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
@@ -220,7 +226,7 @@ buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
                        (inQuotes . fromByteString)
         utf8ToString = T.unpack . TE.decodeUtf8
         sub (Plain  b)      = pure b
-        sub (Escape s)      = error "NOT IMPLEMENTED" --quote <$> escapeStringConn conn s
+        sub (Escape s)      = quote <$> return (Right (escapeStringSql s))
         sub (EscapeByteA s) = error "NOT IMPLEMENTED" ----quote <$> escapeByteaConn conn s
         sub (Many  ys)      = mconcat <$> mapM sub ys
         split s = fromByteString h : if B.null t then [] else split (B.tail t)
@@ -237,6 +243,22 @@ open fname = Connection <$> Base.open fname
 
 close :: Connection -> IO ()
 close (Connection c) = Base.close c
+
+-- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
+-- expected to return results.
+--
+-- Throws 'FormatError' if the query could not be formatted correctly.
+execute :: (ToRow q) => Connection -> Query -> q -> IO ()
+execute conn template qs = do
+  formatQuery conn template qs >>= \q' -> execute_ conn (Query q')
+
+-- | Execute a multi-row @INSERT@, @UPDATE@, or other SQL query that is not
+-- expected to return results.
+--
+-- Throws 'FormatError' if the query could not be formatted correctly.
+executeMany :: (ToRow q) => Connection -> Query -> [q] -> IO ()
+executeMany conn q qs = do
+  formatMany conn q qs >>= \q' -> execute_ conn (Query q')
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. All results are retrieved and converted before this
