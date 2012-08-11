@@ -46,21 +46,22 @@ import           Data.Attoparsec.Char8 hiding (Result)
 import           Data.Bits ((.&.), (.|.), shiftL)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString as SB
+import qualified Data.ByteString.Char8 as B8
+import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
 import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
-import           Data.Typeable (Typeable, typeOf)
-import           Data.Word (Word64)
-import           Database.SQLite.Simple.Internal
-import           Database.SQLite.Simple.Ok
-import           System.IO.Unsafe (unsafePerformIO)
-import qualified Data.ByteString as SB
-import qualified Data.ByteString.Char8 as B8
-import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
+import           Data.Typeable (Typeable, typeOf)
+import           Data.Word (Word64)
+import           System.IO.Unsafe (unsafePerformIO)
+
+import           Database.SQLite.Simple.Internal
+import           Database.SQLite.Simple.Ok
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.

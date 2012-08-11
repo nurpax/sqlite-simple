@@ -51,10 +51,6 @@ import qualified Database.SQLite3 as Base
 data Connection = Connection Base.Database
 
 -- | A Field represents metadata about a particular field
---
--- You don't particularly want to retain these structures for a long
--- period of time,  as they will retain the entire query result,  not
--- just the field metadata
 
 data Field = Field {
      result   :: Base.SQLData

@@ -26,14 +26,14 @@ module Database.SQLite.Simple.Types
     , (:.)(..)
     ) where
 
-import Blaze.ByteString.Builder (toByteString)
-import Control.Arrow (first)
-import Data.ByteString (ByteString)
-import Data.Monoid (Monoid(..))
-import Data.String (IsString(..))
-import Data.Typeable (Typeable)
+import           Blaze.ByteString.Builder (toByteString)
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
+import           Control.Arrow (first)
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import           Data.Monoid (Monoid(..))
+import           Data.String (IsString(..))
+import           Data.Typeable (Typeable)
 
 -- | A placeholder for the SQL @NULL@ value.
 data Null = Null

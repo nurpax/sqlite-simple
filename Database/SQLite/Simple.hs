@@ -42,35 +42,34 @@ module Database.SQLite.Simple (
   , formatQuery
   ) where
 
-import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
-import Blaze.ByteString.Builder.Char8 (fromChar)
-import Control.Applicative
-import Control.Exception
+import           Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
+import           Blaze.ByteString.Builder.Char8 (fromChar)
+import           Control.Applicative
+import           Control.Exception
   ( Exception, onException, throw, throwIO, finally, bracket )
-import Control.Monad (void)
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Strict
-import Data.ByteString (ByteString)
-import Data.List (intersperse)
-import Data.Monoid (mappend, mconcat)
-import Data.Typeable (Typeable)
+import           Control.Monad (void)
+import           Control.Monad.Trans.Reader
+import           Control.Monad.Trans.State.Strict
+import           Data.ByteString (ByteString)
+import           Data.List (intersperse)
+import           Data.Monoid (mappend, mconcat)
+import           Data.Typeable (Typeable)
 import qualified Data.Vector as V
-import Database.SQLite.Simple.Types
+import           Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as TE
 
-import Database.SQLite.Simple.FromField (ResultError(..))
-import Database.SQLite.Simple.FromRow (FromRow(..))
-import Database.SQLite.Simple.Internal
-import Database.SQLite.Simple.Ok
-import Database.SQLite.Simple.ToField (Action(..), inQuotes)
-import Database.SQLite.Simple.ToRow (ToRow(..))
-import Database.SQLite.Simple.Types(
+import           Database.SQLite.Simple.FromField (ResultError(..))
+import           Database.SQLite.Simple.FromRow (FromRow(..))
+import           Database.SQLite.Simple.Internal
+import           Database.SQLite.Simple.Ok
+import           Database.SQLite.Simple.ToField (Action(..), inQuotes)
+import           Database.SQLite.Simple.ToRow (ToRow(..))
+import           Database.SQLite.Simple.Types(
   Binary(..), In(..), Only(..), Query(..), (:.)(..))
-
-import Database.SQLite.Simple.FromRow
+import           Database.SQLite.Simple.FromRow
 
 {- $use
 Create a test database by copy&pasting the below snippet to your
@@ -84,9 +83,9 @@ INSERT INTO test (str) VALUES ('test string');\"
 ..and access it from Haskell:
 
 @
-import Control.Applicative
-import Database.SQLite.Simple
-import Database.SQLite.Simple.FromRow
+import           Control.Applicative
+import           Database.SQLite.Simple
+import           Database.SQLite.Simple.FromRow
 
 data TestField = TestField Int String deriving (Show)
 

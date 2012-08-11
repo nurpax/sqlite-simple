@@ -11,23 +11,23 @@
 
 module Database.SQLite.Simple.Time.Implementation where
 
-import Prelude hiding (take, (++))
-import Blaze.ByteString.Builder(Builder, fromByteString)
-import Blaze.ByteString.Builder.Char8(fromChar)
-import Blaze.Text.Int(integral)
-import Control.Arrow((***))
-import Control.Applicative
-import Control.Monad(when)
-import Data.Bits((.&.))
-import qualified Data.ByteString as B
-import Data.ByteString.Internal (c2w, w2c)
-import Data.Time hiding (getTimeZone, getZonedTime)
-import Data.Typeable
-import Data.Word(Word8)
+import           Blaze.ByteString.Builder(Builder, fromByteString)
+import           Blaze.ByteString.Builder.Char8(fromChar)
+import           Blaze.Text.Int(integral)
+import           Control.Applicative
+import           Control.Arrow((***))
+import           Control.Monad(when)
 import qualified Data.Attoparsec.Char8 as A
-import Data.Monoid(Monoid(..))
-import Data.Fixed (Pico)
-import Unsafe.Coerce
+import           Data.Bits((.&.))
+import qualified Data.ByteString as B
+import           Data.ByteString.Internal (c2w, w2c)
+import           Data.Fixed (Pico)
+import           Data.Monoid(Monoid(..))
+import           Data.Time hiding (getTimeZone, getZonedTime)
+import           Data.Typeable
+import           Data.Word(Word8)
+import           Prelude hiding (take, (++))
+import           Unsafe.Coerce
 
 (++) :: Monoid a => a -> a -> a
 (++) = mappend

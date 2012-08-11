@@ -25,23 +25,22 @@ module Database.SQLite.Simple.FromRow
      , numFieldsRemaining
      ) where
 
-import Control.Applicative (Applicative(..), (<$>))
-import Control.Exception (SomeException(..))
-import Control.Monad (replicateM)
-import Data.Maybe
-import Data.ByteString (ByteString)
+import           Control.Applicative (Applicative(..), (<$>))
+import           Control.Exception (SomeException(..))
+import           Control.Monad (replicateM)
+import           Control.Monad.Trans.State.Strict
+import           Control.Monad.Trans.Reader
+import           Control.Monad.Trans.Class
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import qualified Database.SQLite3 as Base
-import           Database.SQLite.Simple.Types
-import           Database.SQLite.Simple.Ok
-import           Database.SQLite.Simple.Internal
+import           Data.Maybe
+import           Data.Vector ((!))
+
 import           Database.SQLite.Simple.FromField
-
-import Control.Monad.Trans.State.Strict
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.Class
-
-import Data.Vector ((!))
+import           Database.SQLite.Simple.Internal
+import           Database.SQLite.Simple.Ok
+import           Database.SQLite.Simple.Types
+import qualified Database.SQLite3 as Base
 
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.

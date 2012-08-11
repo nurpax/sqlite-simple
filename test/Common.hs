@@ -5,8 +5,9 @@ module Common (
   , TestEnv(..)
 ) where
 
-import Database.SQLite.Simple
 import Test.HUnit
+
+import Database.SQLite.Simple
 
 data TestEnv
     = TestEnv

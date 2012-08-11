@@ -1,8 +1,8 @@
 
 import Common
-import Control.Exception            (bracket)
-import Control.Monad                (when)
-import System.Exit                  (exitFailure)
+import Control.Exception (bracket)
+import Control.Monad     (when)
+import System.Exit       (exitFailure)
 import System.IO
 
 import Simple
