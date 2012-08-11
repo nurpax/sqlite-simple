@@ -24,6 +24,8 @@ Library
      Database.SQLite.Simple.FromField
      Database.SQLite.Simple.FromRow
      Database.SQLite.Simple.Internal
+     Database.SQLite.Simple.ToField
+     Database.SQLite.Simple.ToRow
      Database.SQLite.Simple.Types
 
   Build-depends:

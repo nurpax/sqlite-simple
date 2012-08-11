@@ -49,7 +49,7 @@
 --
 ------------------------------------------------------------------------------
 
-module Database.PostgreSQL.Simple.Time
+module Database.SQLite.Simple.Time
      ( Unbounded(..)
      , Date
      , UTCTimestamp
@@ -77,4 +77,4 @@ module Database.PostgreSQL.Simple.Time
      , unboundedToBuilder
      ) where
 
-import Database.PostgreSQL.Simple.Time.Implementation
+import Database.SQLite.Simple.Time.Implementation

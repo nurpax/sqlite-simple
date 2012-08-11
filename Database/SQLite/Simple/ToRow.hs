@@ -1,10 +1,10 @@
 ------------------------------------------------------------------------------
 -- |
--- Module:      Database.PostgreSQL.Simple.ToRow
 -- Copyright:   (c) 2011 MailRank, Inc.
 --              (c) 2011-2012 Leon P Smith
+--              (c) 2012 Janne Hellsten
 -- License:     BSD3
--- Maintainer:  Leon P Smith <leon@melding-monads.com>
+-- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
 -- Stability:   experimental
 -- Portability: portable
 --
@@ -16,13 +16,13 @@
 --
 ------------------------------------------------------------------------------
 
-module Database.PostgreSQL.Simple.ToRow
+module Database.SQLite.Simple.ToRow
     (
       ToRow(..)
     ) where
 
-import Database.PostgreSQL.Simple.ToField (Action(..), ToField(..))
-import Database.PostgreSQL.Simple.Types (Only(..), (:.)(..))
+import Database.SQLite.Simple.ToField (Action(..), ToField(..))
+import Database.SQLite.Simple.Types (Only(..), (:.)(..))
 
 -- | A collection type that can be turned into a list of rendering
 -- 'Action's.

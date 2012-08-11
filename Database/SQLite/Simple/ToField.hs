@@ -3,11 +3,11 @@
 
 ------------------------------------------------------------------------------
 -- |
--- Module:      Database.PostgreSQL.Simple.ToField
 -- Copyright:   (c) 2011 MailRank, Inc.
 --              (c) 2011-2012 Leon P Smith
+--              (c) 2012 Janne Hellsten
 -- License:     BSD3
--- Maintainer:  Leon P Smith <leon@melding-monads.com>
+-- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
 -- Stability:   experimental
 -- Portability: portable
 --
@@ -15,7 +15,7 @@
 --
 ------------------------------------------------------------------------------
 
-module Database.PostgreSQL.Simple.ToField
+module Database.SQLite.Simple.ToField
     (
       Action(..)
     , ToField(..)
@@ -32,15 +32,14 @@ import Data.Monoid (mappend)
 import Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
-import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Null)
+import Database.SQLite.Simple.Types (Binary(..), In(..), Null)
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
-import qualified Database.PostgreSQL.LibPQ as PQ
-import           Database.PostgreSQL.Simple.Time
+import           Database.SQLite.Simple.Time
 
 -- | How to render an element when substituting it into a query.
 data Action =
@@ -141,10 +140,6 @@ instance ToField Word where
 
 instance ToField Word64 where
     toField = Plain . integral
-    {-# INLINE toField #-}
-
-instance ToField PQ.Oid where
-    toField = Plain . integral . \(PQ.Oid x) -> x
     {-# INLINE toField #-}
 
 instance ToField Float where

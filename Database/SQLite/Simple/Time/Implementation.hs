@@ -1,16 +1,15 @@
 ------------------------------------------------------------------------------
 -- |
--- Module:      Database.PostgreSQL.Simple.Time.Implementation
 -- Copyright:   (c) 2012 Leon P Smith
 -- License:     BSD3
--- Maintainer:  Leon P Smith <leon@melding-monads.com>
+-- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
 -- Stability:   experimental
 --
 ------------------------------------------------------------------------------
 
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Database.PostgreSQL.Simple.Time.Implementation where
+module Database.SQLite.Simple.Time.Implementation where
 
 import Prelude hiding (take, (++))
 import Blaze.ByteString.Builder(Builder, fromByteString)
