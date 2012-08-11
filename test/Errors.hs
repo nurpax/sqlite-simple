@@ -2,6 +2,7 @@
 
 module Errors (
     testErrorsColumns
+  , testErrorsInvalidParams
   ) where
 
 import Prelude hiding (catch)
@@ -11,6 +12,11 @@ import Common
 assertResultErrorCaught :: IO a -> Assertion
 assertResultErrorCaught action = do
   catch (action >> return False) (\(_ :: ResultError) -> return True) >>=
+    assertBool "assertResultError exc"
+
+assertFormatErrorCaught :: IO a -> Assertion
+assertFormatErrorCaught action = do
+  catch (action >> return False) (\(_ :: FormatError) -> return True) >>=
     assertBool "assertResultError exc"
 
 testErrorsColumns :: TestEnv -> Test
@@ -26,3 +32,16 @@ testErrorsColumns TestEnv{..} = TestCase $ do
   assertResultErrorCaught (query_ conn "SELECT id FROM cols" :: IO [(Int, String)])
   -- Mismatching types (source int,text doesn't match dst string,int
   assertResultErrorCaught (query_ conn "SELECT id, t FROM cols" :: IO [(String, Int)])
+
+testErrorsInvalidParams :: TestEnv -> Test
+testErrorsInvalidParams TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE invparams (id INTEGER PRIMARY KEY, t TEXT)"
+  -- No parameters bound.  SQLite will silently subst NULL to unbound
+  -- variables.  Call to execute_ will succeed, although it's probably
+  -- not what users of this library would want.
+  execute_ conn "INSERT INTO invparams (t) VALUES (:v)"
+  -- In this case, we have two bound params but only one given to
+  -- execute.  This should cause an error.
+  assertFormatErrorCaught (execute conn "INSERT INTO invparams (id, t) VALUES (:i, :v)" [3 :: Int])
+  [Only row] <- query_ conn "SELECT t FROM invparams" :: IO [Only (Maybe String)]
+  assertEqual "string" Nothing row

@@ -14,6 +14,7 @@ tests =
     , TestLabel "Simple" . testSimpleOnePlusOne
     , TestLabel "Simple" . testSimpleParams
     , TestLabel "Errors" . testErrorsColumns
+    , TestLabel "Errors" . testErrorsInvalidParams
     ]
 
 -- | Action for connecting to the database that will be used for testing.
