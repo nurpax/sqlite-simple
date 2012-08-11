@@ -59,7 +59,7 @@ data Connection = Connection Base.Database
 -- just the field metadata
 
 data Field = Field {
-     result   :: Result -- TODO should be tied to sqlite types?
+     result   :: Base.SQLData
    , column   :: {-# UNPACK #-} !Int
    }
 

@@ -52,8 +52,7 @@ import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
 import           Database.SQLite.Simple.Internal
-import           Database.SQLite.Simple.Ok --
---import           Database.SQLite.Simple.Types (Binary(..), Null(..))
+import           Database.SQLite.Simple.Ok
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Char8 as B8
@@ -166,10 +165,8 @@ doFromField f types cvt (Just bs) | otherwise = cvt bs
 doFromField f _ _ _ = returnError UnexpectedNull f ""
 
 
--- TODO should pass in SQLData data here, this will be enough to
--- return a meaningful string describing the data type
 fieldTypename :: Field -> String
-fieldTypename f = "fieldTypename: NOT IMPLEMENTED"
+fieldTypename = B.unpack . gettypename . result
 
 -- | Given one of the constructors from 'ResultError',  the field,
 --   and an 'errMessage',  this fills in the other fields in the

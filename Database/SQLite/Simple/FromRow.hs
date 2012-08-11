@@ -82,9 +82,11 @@ fieldWith fieldP = RP $ do
               \convert and number in target type"
       lift (lift (Errors [SomeException convertError]))
     else do
-      let result = rowresult
-          field = Field{..}
-      lift (lift (fieldP field (getvalue result row column)))
+      -- TODO have rowresult be just one row!!
+      -- TODO get rid of sqldataToByteString here - the types are just wrong for fieldP
+      let r = (rowresult !! row) !! column
+          field = Field r column
+      lift (lift (fieldP field (sqldataToByteString r)))
 
 field :: FromField a => RowParser a
 field = fieldWith fromField

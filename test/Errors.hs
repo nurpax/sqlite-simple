@@ -25,4 +25,9 @@ testErrorsColumns TestEnv{..} = TestCase $ do
     catch ((query_ conn "SELECT id FROM cols" :: IO [(Int, String)]) >> return False)
     (\(_ :: ResultError) -> return True)
   assertBool "exception" convFailed
+  -- Mismatching types (source int,text doesn't match dst string,int
+  convFailed <-
+    catch ((query_ conn "SELECT id, t FROM cols" :: IO [(String, Int)]) >> return False)
+    (\(_ :: ResultError) -> return True)
+  assertBool "int,text vs str,int" convFailed
   return ()
