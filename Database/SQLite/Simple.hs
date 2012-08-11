@@ -22,7 +22,8 @@ import Debug.Trace
 
 import Control.Applicative
 import Control.Exception
-  ( Exception, onException, throw, throwIO, finally )
+  ( Exception, onException, throw, throwIO, finally, bracket )
+import Control.Monad (void)
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State.Strict
 import Data.ByteString (ByteString)
@@ -63,25 +64,14 @@ query_ conn q@(Query que) = do
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
-execute_ (Connection conn) (Query que) = do
-  -- TODO bracket one prepare/finalize
-  stmt <- Base.prepare conn (utf8ToString que)
-  res <- Base.step stmt
-  -- TODO assert res == done
-  Base.finalize stmt
+execute_ (Connection conn) (Query que) =
+  bracket (Base.prepare conn (utf8ToString que)) Base.finalize go
+    where
+      go stmt = void $ Base.step stmt
 
-
-forM' :: (Ord n, Num n) => n -> n -> (n -> IO a) -> IO [a]
-forM' lo hi m = loop hi []
-  where
-    loop !n !as
-      | n < lo = return as
-      | otherwise = do
-           a <- m n
-           loop (n-1) (a:as)
 
 finishQuery :: (FromRow r) => Connection -> Query -> Result -> IO [r]
-finishQuery conn q rows = do
+finishQuery conn q rows =
   -- TODO handle sqlite errors, this just skips all of that
   mapM doRow $ zip rows [0..]
     where
@@ -90,9 +80,7 @@ finishQuery conn q rows = do
         case runStateT (runReaderT (unRP fromRow) rw) 0 of
           Ok (val,col) | col == ncols -> return val
                        | otherwise -> do
-                           vals <- forM' 0 (ncols-1) $ \c -> do
-                               return ( gettypename $ rowRes !! c
-                                      , rowRes !! c )
+                           let vals = map (\f -> (gettypename f, f)) rowRes
                            throw (ConversionFailed
                              (show ncols ++ " values: " ++ show vals)
                              (show col ++ " slots in target type")
@@ -103,4 +91,3 @@ finishQuery conn q rows = do
           Errors xs  -> throwIO $ ManyErrors xs
 
       ncols = nfields rows
-      nrows = ntuples rows
