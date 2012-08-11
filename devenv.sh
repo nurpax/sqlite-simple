@@ -4,6 +4,5 @@
 # Run tests
 function rt ()
 {
-    cabal-dev build
-    ./dist/build/test/test
+    cabal-dev build && ./dist/build/test/test
 }
