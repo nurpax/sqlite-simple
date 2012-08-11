@@ -27,8 +27,10 @@ module Database.SQLite.Simple.FromRow
 import Control.Applicative (Applicative(..), (<$>))
 import Control.Exception (SomeException(..))
 import Control.Monad (replicateM)
+import Data.Maybe
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types
 import           Database.SQLite.Simple.Ok
 import           Database.SQLite.Simple.Internal
@@ -68,11 +70,11 @@ fieldWith fieldP = RP $ do
     Row{..} <- ask
     column <- lift get
     lift (put (column + 1))
-    let ncols = nfields rowresult
+    let ncols = length rowresult
     if (column >= ncols)
     then do
-      let vals = map (\c -> ( gettypename (((rowresult !! row) !! c))
-                            , fmap ellipsis (getvalue rowresult row c) ))
+      let vals = map (\c -> (gettypename (rowresult !! c)
+                           , ellipsis (rowresult !! c)))
                      [0..ncols-1]
           convertError = ConversionFailed
               (show ncols ++ " values: " ++ show vals)
@@ -84,23 +86,25 @@ fieldWith fieldP = RP $ do
     else do
       -- TODO have rowresult be just one row!!
       -- TODO get rid of sqldataToByteString here - the types are just wrong for fieldP
-      let r = (rowresult !! row) !! column
+      let r = rowresult !! column
           field = Field r column
       lift (lift (fieldP field (sqldataToByteString r)))
 
 field :: FromField a => RowParser a
 field = fieldWith fromField
 
-ellipsis :: ByteString -> ByteString
-ellipsis bs
+ellipsis :: Base.SQLData -> ByteString
+ellipsis sql
     | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
     | otherwise        = bs
+  where
+    bs = fromMaybe "NULL" (sqldataToByteString sql)
 
 numFieldsRemaining :: RowParser Int
 numFieldsRemaining = RP $ do
     Row{..} <- ask
     column <- lift get
-    return $! nfields rowresult - column
+    return $! length rowresult - column
 
 instance (FromField a) => FromRow (Only a) where
     fromRow = Only <$> field

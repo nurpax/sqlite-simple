@@ -76,7 +76,7 @@ finishQuery conn q rows =
   mapM doRow $ zip rows [0..]
     where
       doRow (rowRes, rowNdx) = do
-        let rw = Row rowNdx rows
+        let rw = Row rowNdx rowRes
         case runStateT (runReaderT (unRP fromRow) rw) 0 of
           Ok (val,col) | col == ncols -> return val
                        | otherwise -> do
@@ -90,4 +90,4 @@ finishQuery conn q rows =
           Errors [x] -> throwIO x
           Errors xs  -> throwIO $ ManyErrors xs
 
-      ncols = nfields rows
+      ncols = length . head $ rows

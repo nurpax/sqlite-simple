@@ -65,7 +65,7 @@ data Field = Field {
 
 data Row = Row {
      row        :: {-# UNPACK #-} !Int
-   , rowresult  :: Result
+   , rowresult  :: [Base.SQLData]
    }
 
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
@@ -78,12 +78,6 @@ newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
 -- altogether.  This is legacy from postgresql-simple where these
 -- functions actually operate on actual PostgreSQL Result objects.
 type Result = [[Base.SQLData]]
-
-getvalue :: Result -> Int -> Int -> Maybe ByteString
-getvalue r r_ c_ = sqldataToByteString $ (r !! r_) !! c_
-
-nfields :: Result -> Int
-nfields r = length . head $ r
 
 gettypename :: Base.SQLData -> ByteString
 gettypename (Base.SQLInteger _) = "INTEGER"
