@@ -8,6 +8,11 @@ import Prelude hiding (catch)
 import Control.Exception
 import Common
 
+assertResultErrorCaught :: IO a -> Assertion
+assertResultErrorCaught action = do
+  catch (action >> return False) (\(_ :: ResultError) -> return True) >>=
+    assertBool "assertResultError exc"
+
 testErrorsColumns :: TestEnv -> Test
 testErrorsColumns TestEnv{..} = TestCase $ do
   execute_ conn "CREATE TABLE cols (id INTEGER PRIMARY KEY, t TEXT)"
@@ -16,18 +21,8 @@ testErrorsColumns TestEnv{..} = TestCase $ do
   assertEqual "row count" 1 (length rows)
   assertEqual "string" (Only "test string") (head rows)
   -- Mismatched number of output columns (selects two, dest type has 1 field)
-  convFailedTriggered <-
-    catch ((query_ conn "SELECT id,t FROM cols" :: IO [Only Int]) >> return False)
-    (\(_ :: ResultError) -> return True)
-  assertBool "exception" convFailedTriggered
+  assertResultErrorCaught (query_ conn "SELECT id,t FROM cols" :: IO [Only Int])
   -- Same as above but the other way round (select 1, dst has two)
-  convFailed <-
-    catch ((query_ conn "SELECT id FROM cols" :: IO [(Int, String)]) >> return False)
-    (\(_ :: ResultError) -> return True)
-  assertBool "exception" convFailed
+  assertResultErrorCaught (query_ conn "SELECT id FROM cols" :: IO [(Int, String)])
   -- Mismatching types (source int,text doesn't match dst string,int
-  convFailed <-
-    catch ((query_ conn "SELECT id, t FROM cols" :: IO [(String, Int)]) >> return False)
-    (\(_ :: ResultError) -> return True)
-  assertBool "int,text vs str,int" convFailed
-  return ()
+  assertResultErrorCaught (query_ conn "SELECT id, t FROM cols" :: IO [(String, Int)])
