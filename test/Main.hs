@@ -16,6 +16,7 @@ tests =
     , TestLabel "Simple"    . testSimpleParams
     , TestLabel "ParamConv" . testParamConvInt
     , TestLabel "ParamConv" . testParamConvFloat
+    , TestLabel "ParamConv" . testParamConvDateTime
     , TestLabel "Errors"    . testErrorsColumns
     , TestLabel "Errors"    . testErrorsInvalidParams
     ]

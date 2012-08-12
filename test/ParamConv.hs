@@ -1,9 +1,11 @@
 
 module ParamConv (
     testParamConvInt
-  , testParamConvFloat) where
+  , testParamConvFloat
+  , testParamConvDateTime) where
 
 import Data.Int
+import Data.Time
 
 import Common
 
@@ -44,3 +46,17 @@ testParamConvFloat TestEnv{..} = TestCase $ do
   assertEqual "value" 1.0 r
   [Only r] <- query conn "SELECT ?*0.25" (Only (8.0 :: Double)) :: IO [Only Double]
   assertEqual "value" 2.0 r
+
+testParamConvDateTime :: TestEnv -> Test
+testParamConvDateTime TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE dt (id INTEGER PRIMARY KEY, t1 DATE, t2 TIMESTAMP)"
+  execute_ conn "INSERT INTO dt (t1, t2) VALUES (date('now'), datetime('now'))"
+  _rows <- query_ conn "SELECT t1,t2 from dt" :: IO [(Day, UTCTime)]
+  -- TODO should _rows be forced to make sure parsers kick on the
+  -- returned data?
+  execute conn "INSERT INTO dt (t1,t2) VALUES (?,?)"
+    (read "2012-08-12" :: Day, read "2012-08-12 01:01:01" :: UTCTime)
+  [_,(t1,t2)] <- query_ conn "SELECT t1,t2 from dt" :: IO [(Day, UTCTime)]
+  assertEqual "day" (read "2012-08-12" :: Day) t1
+  assertEqual "day" (read "2012-08-12 01:01:01" :: UTCTime) t2
+

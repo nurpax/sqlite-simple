@@ -51,6 +51,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
+import           Data.Maybe
 import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import qualified Data.Text as ST
@@ -60,9 +61,11 @@ import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
 import           System.IO.Unsafe (unsafePerformIO)
 
+import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
+import           Database.SQLite.Simple.Time
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.
@@ -141,15 +144,26 @@ instance FromField ST.Text where
     -- FIXME:  check character encoding
 
 instance FromField [Char] where
-    fromField f dat = ST.unpack <$> fromField f dat
+  fromField f dat = ST.unpack <$> fromField f dat
 
+instance FromField UTCTime where
+  fromField f bs =
+    case result f of
+      SQLText t -> Ok $ read t
+      _ -> returnError ConversionFailed f "expecting SQLText column type for UTCTime"
+
+instance FromField Day where
+  fromField f bs =
+    case result f of
+      SQLText t -> Ok $ read t
+      _ -> returnError ConversionFailed f "expecting SQLText column type for Day"
 
 newtype Compat = Compat Word64
 
 -- TODO should move these to direct-sqlite?
 data BuiltinType =
   SQL3Int | SQL3Float | SQL3Text | SQL3Blob
-  deriving (Enum)
+  deriving (Enum, Eq)
 
 mkCompats :: [BuiltinType] -> Compat
 mkCompats = foldl' f (Compat 0) . map mkCompat

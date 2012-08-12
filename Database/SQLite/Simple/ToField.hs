@@ -161,12 +161,16 @@ instance ToField LT.Text where
     toField = toField . LT.toStrict
     {-# INLINE toField #-}
 
--- TODO enable these
 
---instance ToField UTCTime where
---    toField = SQLText . utcTimeToBuilder
---    {-# INLINE toField #-}
---
+instance ToField UTCTime where
+    toField = SQLText . show
+    {-# INLINE toField #-}
+
+instance ToField Day where
+    toField = SQLText . show
+    {-# INLINE toField #-}
+
+-- TODO enable these
 --instance ToField ZonedTime where
 --    toField = SQLText . zonedTimeToBuilder
 --    {-# INLINE toField #-}
