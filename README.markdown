@@ -12,6 +12,13 @@ The API has been modeled directly after
 in turn borrows from
 [mysql-simple](https://github.com/bos/mysql-simple).
 
+Building
+--------
+
+The usual cabal/cabal-dev instructions apply.
+
+NOTE: as of Aug 12, the package relies on an unreleased version of
+direct-sqlite, so the git HEAD currently doesn't build out of the box.
 
 Examples of use
 ---------------
