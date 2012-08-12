@@ -7,11 +7,10 @@ import Data.Int
 
 import Common
 
-one :: Int
-one = 1
-
-two :: Int
-two = 2
+one, two, three :: Int
+one   = 1
+two   = 2
+three = 3
 
 testParamConvInt :: TestEnv -> Test
 testParamConvInt TestEnv{..} = TestCase $ do
@@ -36,8 +35,8 @@ testParamConvInt TestEnv{..} = TestCase $ do
   assertEqual "should see Just 3" (Just 3) r
   [Only r] <- (query conn "SELECT ?") (Only (Nothing :: Maybe Int)) :: IO [Only (Maybe Int)]
   assertEqual "should see nothing" Nothing r
-  [Only r] <- (query conn "SELECT ?") (Only (Just 4 :: Maybe Int)) :: IO [Only (Maybe Int)]
-  assertEqual "should see 4" (Just 4) r
+  [Only r] <- (query conn "SELECT ?") (Only (Just three :: Maybe Int)) :: IO [Only (Maybe Int)]
+  assertEqual "should see 4" (Just 3) r
 
 testParamConvFloat :: TestEnv -> Test
 testParamConvFloat TestEnv{..} = TestCase $ do
