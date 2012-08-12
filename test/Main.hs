@@ -6,15 +6,18 @@ import System.Exit       (exitFailure)
 import System.IO
 
 import Simple
+import ParamConv
 import Errors
 
 tests :: [TestEnv -> Test]
 tests =
-    [ TestLabel "Simple" . testSimpleSelect
-    , TestLabel "Simple" . testSimpleOnePlusOne
-    , TestLabel "Simple" . testSimpleParams
-    , TestLabel "Errors" . testErrorsColumns
-    , TestLabel "Errors" . testErrorsInvalidParams
+    [ TestLabel "Simple"    . testSimpleSelect
+    , TestLabel "Simple"    . testSimpleOnePlusOne
+    , TestLabel "Simple"    . testSimpleParams
+    , TestLabel "ParamConv" . testParamConvInt
+    , TestLabel "ParamConv" . testParamConvFloat
+    , TestLabel "Errors"    . testErrorsColumns
+    , TestLabel "Errors"    . testErrorsInvalidParams
     ]
 
 -- | Action for connecting to the database that will be used for testing.

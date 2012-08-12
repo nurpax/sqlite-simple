@@ -16,7 +16,6 @@ testSimpleOnePlusOne TestEnv{..} = TestCase $ do
 testSimpleSelect :: TestEnv -> Test
 testSimpleSelect TestEnv{..} = TestCase $ do
   execute_ conn "CREATE TABLE test1 (id INTEGER PRIMARY KEY, t TEXT)"
-  -- TODO another case needed for inserting with real query params
   execute_ conn "INSERT INTO test1 (t) VALUES ('test string')"
   rows <- query_ conn "SELECT t FROM test1" :: IO [Only String]
   assertEqual "row count" 1 (length rows)
