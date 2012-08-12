@@ -60,6 +60,7 @@ import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
 import           System.IO.Unsafe (unsafePerformIO)
 
+import           Database.SQLite.Simple.Types
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
 
@@ -112,9 +113,9 @@ instance (FromField a) => FromField (Maybe a) where
     fromField _ Nothing = pure Nothing
     fromField f bs      = Just <$> fromField f bs
 
---instance FromField Null where
---    fromField _ Nothing  = pure Null
---    fromField f (Just _) = returnError ConversionFailed f "data is not null"
+instance FromField Null where
+    fromField _ Nothing  = pure Null
+    fromField f (Just _) = returnError ConversionFailed f "data is not null"
 
 instance FromField Int16 where
     fromField = atto ok16 $ signed decimal

@@ -30,6 +30,14 @@ testParamConvInt TestEnv{..} = TestCase $ do
   [Only r] <- (query conn "SELECT 2*?" (Only (0x7FFFFFFFFF :: Int64))) :: IO [Only Int64]
   assertEqual "> 32-bit result & param"
     (2*0x7FFFFFFFFF :: Int64) (fromIntegral r)
+  [Only r] <- (query_ conn "SELECT NULL") :: IO [Only (Maybe Int)]
+  assertEqual "should see nothing" Nothing r
+  [Only r] <- (query_ conn "SELECT 3") :: IO [Only (Maybe Int)]
+  assertEqual "should see Just 3" (Just 3) r
+  [Only r] <- (query conn "SELECT ?") (Only (Nothing :: Maybe Int)) :: IO [Only (Maybe Int)]
+  assertEqual "should see nothing" Nothing r
+  [Only r] <- (query conn "SELECT ?") (Only (Just 4 :: Maybe Int)) :: IO [Only (Maybe Int)]
+  assertEqual "should see 4" (Just 4) r
 
 testParamConvFloat :: TestEnv -> Test
 testParamConvFloat TestEnv{..} = TestCase $ do
