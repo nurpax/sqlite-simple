@@ -116,8 +116,24 @@ instance (FromField a) => FromField (Maybe a) where
 --    fromField _ Nothing  = pure Null
 --    fromField f (Just _) = returnError ConversionFailed f "data is not null"
 
+instance FromField Int16 where
+    fromField = atto ok16 $ signed decimal
+
+instance FromField Int32 where
+    fromField = atto ok32 $ signed decimal
+
 instance FromField Int where
     fromField = atto okInt $ signed decimal
+
+instance FromField Int64 where
+    fromField = atto ok64 $ signed decimal
+
+instance FromField Integer where
+    fromField = atto ok64 $ signed decimal
+
+instance FromField Double where
+    fromField = atto ok double
+        where ok = mkCompats [SQL3Float]
 
 instance FromField ST.Text where
     fromField f = doFromField f okText $ (either left pure . ST.decodeUtf8')

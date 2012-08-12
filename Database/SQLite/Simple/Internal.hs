@@ -80,6 +80,7 @@ gettypename Base.SQLNull = "NULL"
 sqldataToByteString :: Base.SQLData -> Maybe ByteString
 sqldataToByteString (Base.SQLInteger v) = Just $ (B8.pack (show v))
 sqldataToByteString (Base.SQLText s) = Just . B8.pack $ s
+sqldataToByteString (Base.SQLFloat f) = Just . B8.pack $ (show f)
 sqldataToByteString Base.SQLNull = Nothing
 
 utf8ToString :: ByteString -> String
