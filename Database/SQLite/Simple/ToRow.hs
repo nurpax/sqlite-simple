@@ -87,8 +87,5 @@ instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
         [toField a, toField b, toField c, toField d, toField e, toField f,
          toField g, toField h, toField i, toField j]
 
-instance (ToField a) => ToRow [a] where
-    toRow = map toField
-
 instance (ToRow a, ToRow b) => ToRow (a :. b) where
     toRow (a :. b) = toRow a ++ toRow b

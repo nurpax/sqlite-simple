@@ -61,7 +61,7 @@ import           Database.SQLite.Simple.FromField (ResultError(..))
 import           Database.SQLite.Simple.FromRow (FromRow(..))
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
-import           Database.SQLite.Simple.ToField (Action(..))
+import           Database.SQLite.Simple.ToField
 import           Database.SQLite.Simple.ToRow (ToRow(..))
 import           Database.SQLite.Simple.Types(
   Binary(..), In(..), Only(..), Query(..), (:.)(..))
@@ -123,12 +123,20 @@ withBind :: Query -> Base.Statement -> [Base.SQLData] -> IO r -> IO r
 withBind templ stmt qp action = do
   stmtParamCount <- Base.bindParameterCount stmt
   when (length qp /= stmtParamCount) (throwColumnMismatch qp stmtParamCount)
+  mapM_ errorCheckParamName [1..stmtParamCount]
   Base.bind stmt qp
   action
   where
     throwColumnMismatch qp nParams =
       fmtError ("SQL query contains " ++ show nParams ++ " params, but " ++
                 show (length qp) ++ " arguments given") templ qp
+    errorCheckParamName paramNdx = do
+      name <- Base.bindParameterName stmt paramNdx
+      case name of
+        Just n ->
+          fmtError ("Only unnamed '?' query parameters are accepted, '"++n++"' given")
+                    templ qp
+        Nothing -> return ()
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.

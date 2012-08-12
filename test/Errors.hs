@@ -36,14 +36,12 @@ testErrorsColumns TestEnv{..} = TestCase $ do
 testErrorsInvalidParams :: TestEnv -> Test
 testErrorsInvalidParams TestEnv{..} = TestCase $ do
   execute_ conn "CREATE TABLE invparams (id INTEGER PRIMARY KEY, t TEXT)"
-  -- No parameters bound.  SQLite will silently subst NULL to unbound
-  -- variables.  Call to execute_ will succeed, although it's probably
-  -- not what users of this library would want.
-  execute_ conn "INSERT INTO invparams (t) VALUES (:v)"
+  -- Test that only unnamed params are accepted
+  assertFormatErrorCaught
+    (execute conn "INSERT INTO invparams (t) VALUES (:v)" (Only ("foo" :: String)))
+  assertFormatErrorCaught
+    (execute conn "INSERT INTO invparams (id, t) VALUES (:v,$1)" (3::Int, "foo" :: String))
   -- In this case, we have two bound params but only one given to
   -- execute.  This should cause an error.
-  assertFormatErrorCaught (execute conn "INSERT INTO invparams (id, t) VALUES (?, ?)" [3 :: Int])
-  -- TODO we should actually disallow ?1,?2, :v etc since our input
-  -- query params don't specify any binding to names/indices.
-  [Only row] <- query_ conn "SELECT t FROM invparams" :: IO [Only (Maybe String)]
-  assertEqual "string" Nothing row
+  assertFormatErrorCaught
+    (execute conn "INSERT INTO invparams (id, t) VALUES (?, ?)" (Only (3::Int)))
