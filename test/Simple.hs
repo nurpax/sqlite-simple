@@ -34,11 +34,10 @@ testSimpleParams :: TestEnv -> Test
 testSimpleParams TestEnv{..} = TestCase $ do
   execute_ conn "CREATE TABLE testparams (id INTEGER PRIMARY KEY, t TEXT)"
   execute_ conn "CREATE TABLE testparams2 (id INTEGER, t TEXT, t2 TEXT)"
-  -- TODO another case needed for inserting with real query params
   [Only i] <- (query conn "SELECT ?" [42 :: Int])  :: IO [Only Int]
   assertEqual "select int param" 42 i
   execute conn "INSERT INTO testparams (t) VALUES (?)" ["test string" :: String]
-  rows <- query conn "SELECT t FROM test1 WHERE id = ?" [(1 :: Int)] :: IO [Only String]
+  rows <- query conn "SELECT t FROM testparams WHERE id = ?" [(1 :: Int)] :: IO [Only String]
   assertEqual "row count" 1 (length rows)
   assertEqual "string" (Only "test string") (head rows)
   execute_ conn "INSERT INTO testparams (t) VALUES ('test2')"

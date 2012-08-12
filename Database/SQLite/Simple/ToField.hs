@@ -18,9 +18,8 @@
 
 module Database.SQLite.Simple.ToField
     (
-      Action(..)
+      Action
     , ToField(..)
-    , inQuotes
     ) where
 
 import           Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
@@ -39,33 +38,14 @@ import qualified Data.Text.Lazy as LT
 import           Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime)
 import           Data.Typeable (Typeable)
 import           Data.Word (Word, Word8, Word16, Word32, Word64)
+import           GHC.Float
 
+import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Time
 import           Database.SQLite.Simple.Types (Binary(..), In(..), Null)
 
--- | How to render an element when substituting it into a query.
-data Action =
-    Plain Builder
-    -- ^ Render without escaping or quoting. Use for non-text types
-    -- such as numbers, when you are /certain/ that they will not
-    -- introduce formatting vulnerabilities via use of characters such
-    -- as spaces or \"@'@\".
-  | Escape ByteString
-    -- ^ Escape and enclose in quotes before substituting. Use for all
-    -- text-like types, and anything else that may contain unsafe
-    -- characters when rendered.
-  | EscapeByteA ByteString
-    -- ^ Escape binary data for use as a @bytea@ literal.  Include surrounding
-    -- quotes.  This is used by the 'Binary' newtype wrapper.
-  | Many [Action]
-    -- ^ Concatenate a series of rendering actions.
-    deriving (Typeable)
-
-instance Show Action where
-    show (Plain b)       = "Plain " ++ show (toByteString b)
-    show (Escape b)      = "Escape " ++ show b
-    show (EscapeByteA b) = "EscapeByteA " ++ show b
-    show (Many b)        = "Many " ++ show b
+-- | How to bind elements for query.
+type Action = SQLData
 
 -- | A type that may be used as a single parameter to a SQL query.
 class ToField a where
@@ -82,145 +62,139 @@ instance (ToField a) => ToField (Maybe a) where
     {-# INLINE toField #-}
 
 instance (ToField a) => ToField (In [a]) where
-    toField (In []) = Plain $ fromByteString "(null)"
-    toField (In xs) = Many $
-        Plain (fromChar '(') :
-        (intersperse (Plain (fromChar ',')) . map toField $ xs) ++
-        [Plain (fromChar ')')]
+    toField (In _) =
+      error "NOT IMPLEMENTED see https://github.com/nurpax/sqlite-simple/issues/6"
 
 renderNull :: Action
-renderNull = Plain (fromByteString "null")
+renderNull = Base.SQLNull
 
 instance ToField Null where
     toField _ = renderNull
     {-# INLINE toField #-}
 
 instance ToField Bool where
-    toField True  = Plain (fromByteString "true")
-    toField False = Plain (fromByteString "false")
+    toField True  = SQLText "true"
+    toField False = SQLText "false"
     {-# INLINE toField #-}
 
 instance ToField Int8 where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Int16 where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Int32 where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Int where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Int64 where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Integer where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Word8 where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Word16 where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Word32 where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Word where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Word64 where
-    toField = Plain . integral
+    toField = SQLInteger . fromIntegral
     {-# INLINE toField #-}
 
 instance ToField Float where
-    toField v | isNaN v || isInfinite v = Plain (inQuotes (float v))
-              | otherwise               = Plain (float v)
+    toField = SQLFloat . float2Double
     {-# INLINE toField #-}
 
 instance ToField Double where
-    toField v | isNaN v || isInfinite v = Plain (inQuotes (double v))
-              | otherwise               = Plain (double v)
+    toField = SQLFloat
     {-# INLINE toField #-}
 
 instance ToField (Binary SB.ByteString) where
-    toField (Binary bs) = EscapeByteA bs
+    toField (Binary bs) = SQLBlob bs
     {-# INLINE toField #-}
 
 instance ToField (Binary LB.ByteString) where
-    toField (Binary bs) = (EscapeByteA . SB.concat . LB.toChunks) bs
+    toField (Binary bs) = (SQLBlob . SB.concat . LB.toChunks) bs
     {-# INLINE toField #-}
 
 instance ToField SB.ByteString where
-    toField = Escape
+    toField = SQLBlob
     {-# INLINE toField #-}
 
 instance ToField LB.ByteString where
     toField = toField . SB.concat . LB.toChunks
     {-# INLINE toField #-}
 
+-- TODO is it ok to stick text into blob fields in the db?
+sqltextFromBS :: ByteString -> SQLData
+sqltextFromBS = SQLBlob
+
 instance ToField ST.Text where
-    toField = Escape . ST.encodeUtf8
+    toField = sqltextFromBS . ST.encodeUtf8
     {-# INLINE toField #-}
 
 instance ToField [Char] where
-    toField = Escape . toByteString . Utf8.fromString
+    toField = SQLText
     {-# INLINE toField #-}
 
 instance ToField LT.Text where
     toField = toField . LT.toStrict
     {-# INLINE toField #-}
 
-instance ToField UTCTime where
-    toField = Plain . inQuotes . utcTimeToBuilder
-    {-# INLINE toField #-}
+-- TODO enable these
 
-instance ToField ZonedTime where
-    toField = Plain . inQuotes . zonedTimeToBuilder
-    {-# INLINE toField #-}
-
-instance ToField LocalTime where
-    toField = Plain . inQuotes . localTimeToBuilder
-    {-# INLINE toField #-}
-
-instance ToField Day where
-    toField = Plain . inQuotes . dayToBuilder
-    {-# INLINE toField #-}
-
-instance ToField TimeOfDay where
-    toField = Plain . inQuotes . timeOfDayToBuilder
-    {-# INLINE toField #-}
-
-instance ToField UTCTimestamp where
-    toField = Plain . inQuotes . utcTimestampToBuilder
-    {-# INLINE toField #-}
-
-instance ToField ZonedTimestamp where
-    toField = Plain . inQuotes . zonedTimestampToBuilder
-    {-# INLINE toField #-}
-
-instance ToField LocalTimestamp where
-    toField = Plain . inQuotes . localTimestampToBuilder
-    {-# INLINE toField #-}
-
-instance ToField Date where
-    toField = Plain . inQuotes . dateToBuilder
-    {-# INLINE toField #-}
-
--- | Surround a string with single-quote characters: \"@'@\"
+--instance ToField UTCTime where
+--    toField = SQLText . utcTimeToBuilder
+--    {-# INLINE toField #-}
 --
--- This function /does not/ perform any other escaping.
-inQuotes :: Builder -> Builder
-inQuotes b = quote `mappend` b `mappend` quote
-  where quote = Utf8.fromChar '\''
+--instance ToField ZonedTime where
+--    toField = SQLText . zonedTimeToBuilder
+--    {-# INLINE toField #-}
+--
+--instance ToField LocalTime where
+--    toField = SQLText . localTimeToBuilder
+--    {-# INLINE toField #-}
+--
+--instance ToField Day where
+--    toField = SQLText . dayToBuilder
+--    {-# INLINE toField #-}
+--
+--instance ToField TimeOfDay where
+--    toField = SQLText . timeOfDayToBuilder
+--    {-# INLINE toField #-}
+--
+--instance ToField UTCTimestamp where
+--    toField = SQLText . utcTimestampToBuilder
+--    {-# INLINE toField #-}
+--
+--instance ToField ZonedTimestamp where
+--    toField = SQLText . zonedTimestampToBuilder
+--    {-# INLINE toField #-}
+--
+--instance ToField LocalTimestamp where
+--    toField = SQLText . localTimestampToBuilder
+--    {-# INLINE toField #-}
+--
+--instance ToField Date where
+--    toField = SQLText . dateToBuilder
+--    {-# INLINE toField #-}

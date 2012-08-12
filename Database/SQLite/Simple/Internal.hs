@@ -87,14 +87,18 @@ utf8ToString = T.unpack . TE.decodeUtf8
 
 exec :: Connection -> ByteString -> IO Result
 exec (Connection conn) q =
-  bracket (Base.prepare conn (utf8ToString q)) Base.finalize takeRows
-    where
-      takeRows stmt = do
-        res <- Base.step stmt
-        case res of
-          Base.Row -> do
-            cols <- Base.columns stmt
-            next <- takeRows stmt
-            return $ cols : next
-          Base.Done ->
-            return []
+  bracket (Base.prepare conn (utf8ToString q)) Base.finalize stepStmt
+
+-- Run a query a prepared statement
+stepStmt :: Base.Statement -> IO Result
+stepStmt = go
+  where
+    go stmt = do
+      res <- Base.step stmt
+      case res of
+        Base.Row -> do
+          cols <- Base.columns stmt
+          next <- go stmt
+          return $ cols : next
+        Base.Done ->
+          return []
