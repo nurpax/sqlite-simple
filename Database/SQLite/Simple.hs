@@ -204,7 +204,7 @@ finishQuery rows =
 
       ncols = length . head $ rows
 
-fmtError :: String -> Query -> [Action] -> a
+fmtError :: String -> Query -> [Base.SQLData] -> a
 fmtError msg q xs = throw FormatError {
                       fmtMessage = msg
                     , fmtQuery = q

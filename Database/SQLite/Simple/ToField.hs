@@ -12,15 +12,12 @@
 -- Stability:   experimental
 -- Portability: portable
 --
--- The 'ToField' typeclass, for rendering a parameter to a SQL query.
+-- The 'ToField' typeclass, for rendering a parameter to an SQLite
+-- value to be bound as a SQL query parameter.
 --
 ------------------------------------------------------------------------------
 
-module Database.SQLite.Simple.ToField
-    (
-      Action
-    , ToField(..)
-    ) where
+module Database.SQLite.Simple.ToField (ToField(..)) where
 
 import           Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
@@ -30,7 +27,6 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int8, Int16, Int32, Int64)
-import           Data.List (intersperse)
 import           Data.Monoid (mappend)
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
@@ -44,20 +40,17 @@ import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Time
 import           Database.SQLite.Simple.Types (Binary(..), In(..), Null)
 
--- | How to bind elements for query.
-type Action = SQLData
-
 -- | A type that may be used as a single parameter to a SQL query.
 class ToField a where
-    toField :: a -> Action
+    toField :: a -> SQLData
     -- ^ Prepare a value for substitution into a query string.
 
-instance ToField Action where
+instance ToField SQLData where
     toField a = a
     {-# INLINE toField #-}
 
 instance (ToField a) => ToField (Maybe a) where
-    toField Nothing  = renderNull
+    toField Nothing  = Base.SQLNull
     toField (Just a) = toField a
     {-# INLINE toField #-}
 
@@ -65,11 +58,8 @@ instance (ToField a) => ToField (In [a]) where
     toField (In _) =
       error "NOT IMPLEMENTED see https://github.com/nurpax/sqlite-simple/issues/6"
 
-renderNull :: Action
-renderNull = Base.SQLNull
-
 instance ToField Null where
-    toField _ = renderNull
+    toField _ = Base.SQLNull
     {-# INLINE toField #-}
 
 instance ToField Bool where

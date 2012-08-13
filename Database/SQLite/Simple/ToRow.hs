@@ -22,16 +22,15 @@ module Database.SQLite.Simple.ToRow
       ToRow(..)
     ) where
 
-import Database.SQLite.Simple.ToField (Action(..), ToField(..))
+import Database.SQLite.Simple.ToField (ToField(..))
 import Database.SQLite.Simple.Types (Only(..), (:.)(..))
 
--- | A collection type that can be turned into a list of rendering
--- 'Action's.
---
--- Instances should use the 'render' method of the 'Param' class
--- to perform conversion of each element of the collection.
+import Database.SQLite3 (SQLData(..))
+
+-- | A collection type that can be turned into a list of SQLData
+-- elements.
 class ToRow a where
-    toRow :: a -> [Action]
+    toRow :: a -> [SQLData]
     -- ^ ToField a collection of values.
 
 instance ToRow () where
