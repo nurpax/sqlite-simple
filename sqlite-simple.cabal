@@ -10,10 +10,11 @@ Description:
 License:             BSD3
 License-file:        LICENSE
 Author:              Bryan O'Sullivan, Leon P Smith, Janne Hellsten
-Maintainer:          Janne Hellsten <jjhellst@gamil.com>
-Copyright:           (c) 2011 MailRank, Inc.
-                     (c) 2011-2012 Leon P Smith
+Maintainer:          Janne Hellsten <jjhellst@gmail.com>
+Copyright:           (c) 2011 MailRank, Inc.,
+                     (c) 2011-2012 Leon P Smith,
                      (c) 2012 Janne Hellsten
+Homepage:            http://github.com/nurpax/sqlite-simple
 bug-reports:         http://github.com/nurpax/sqlite-simple/issues
 Category:            Database
 Build-type:          Simple
@@ -43,8 +44,7 @@ Library
     direct-sqlite >= 1.1,
     text >= 0.11.1,
     time,
-    transformers,
-    vector
+    transformers
 
   extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
               TypeOperators

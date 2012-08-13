@@ -38,7 +38,6 @@ import           Data.Typeable
 import           Data.Word
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
-import qualified Data.Vector as V
 import           System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.Text          as T

@@ -147,13 +147,13 @@ instance FromField [Char] where
   fromField f dat = ST.unpack <$> fromField f dat
 
 instance FromField UTCTime where
-  fromField f bs =
+  fromField f _ =
     case result f of
       SQLText t -> Ok $ read t
       _ -> returnError ConversionFailed f "expecting SQLText column type for UTCTime"
 
 instance FromField Day where
-  fromField f bs =
+  fromField f _ =
     case result f of
       SQLText t -> Ok $ read t
       _ -> returnError ConversionFailed f "expecting SQLText column type for Day"

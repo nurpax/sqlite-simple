@@ -34,7 +34,6 @@ import           Control.Monad.Trans.Class
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Maybe
-import           Data.Vector ((!))
 
 import           Database.SQLite.Simple.FromField
 import           Database.SQLite.Simple.Internal

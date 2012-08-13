@@ -50,7 +50,6 @@ import           Data.ByteString (ByteString)
 import           Data.List (intersperse)
 import           Data.Monoid (mappend, mconcat)
 import           Data.Typeable (Typeable)
-import qualified Data.Vector as V
 import           Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
 import qualified Data.ByteString.Char8 as B
