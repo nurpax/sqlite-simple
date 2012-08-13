@@ -8,6 +8,7 @@ import System.IO
 import Simple
 import ParamConv
 import Errors
+import Utf8Strings
 
 tests :: [TestEnv -> Test]
 tests =
@@ -19,6 +20,7 @@ tests =
     , TestLabel "ParamConv" . testParamConvDateTime
     , TestLabel "Errors"    . testErrorsColumns
     , TestLabel "Errors"    . testErrorsInvalidParams
+    , TestLabel "Utf8"      . testUtf8Simplest
     ]
 
 -- | Action for connecting to the database that will be used for testing.

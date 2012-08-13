@@ -20,11 +20,11 @@
 
 module Database.SQLite.Simple.Internal where
 
-import Prelude hiding (catch)
+import           Prelude hiding (catch)
 
 import           Control.Applicative
 import           Control.Exception
-import           Data.ByteString(ByteString)
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B8
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
@@ -66,17 +66,14 @@ gettypename Base.SQLNull = "NULL"
 -- directly.
 sqldataToByteString :: Base.SQLData -> Maybe ByteString
 sqldataToByteString (Base.SQLInteger v) = Just $ (B8.pack (show v))
-sqldataToByteString (Base.SQLText s) = Just . B8.pack $ s
+sqldataToByteString (Base.SQLText s) = Just . TE.encodeUtf8 . T.pack $ s
 sqldataToByteString (Base.SQLFloat f) = Just . B8.pack $ (show f)
 sqldataToByteString (Base.SQLBlob f) = Just f
 sqldataToByteString Base.SQLNull = Nothing
 
-utf8ToString :: ByteString -> String
-utf8ToString = T.unpack . TE.decodeUtf8
-
-exec :: Connection -> ByteString -> IO Result
+exec :: Connection -> T.Text -> IO Result
 exec (Connection conn) q =
-  bracket (Base.prepare conn (utf8ToString q)) Base.finalize stepStmt
+  bracket (Base.prepare conn (T.unpack q)) Base.finalize stepStmt
 
 -- Run a query a prepared statement
 stepStmt :: Base.Statement -> IO Result

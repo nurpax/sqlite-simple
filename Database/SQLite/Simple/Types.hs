@@ -26,14 +26,11 @@ module Database.SQLite.Simple.Types
     , (:.)(..)
     ) where
 
-import           Blaze.ByteString.Builder (toByteString)
-import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
 import           Control.Arrow (first)
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import           Data.Monoid (Monoid(..))
 import           Data.String (IsString(..))
 import           Data.Typeable (Typeable)
+import qualified Data.Text as T
 
 -- | A placeholder for the SQL @NULL@ value.
 data Null = Null
@@ -63,7 +60,7 @@ instance Eq Null where
 -- that contain Unicode characters will be correctly transformed to
 -- UTF-8.
 newtype Query = Query {
-      fromQuery :: ByteString
+      fromQuery :: T.Text
     } deriving (Eq, Ord, Typeable)
 
 instance Show Query where
@@ -73,11 +70,11 @@ instance Read Query where
     readsPrec i = fmap (first Query) . readsPrec i
 
 instance IsString Query where
-    fromString = Query . toByteString . Utf8.fromString
+    fromString = Query . T.pack
 
 instance Monoid Query where
-    mempty = Query B.empty
-    mappend (Query a) (Query b) = Query (B.append a b)
+    mempty = Query T.empty
+    mappend (Query a) (Query b) = Query (T.append a b)
     {-# INLINE mappend #-}
 
 -- | A single-value \"collection\".

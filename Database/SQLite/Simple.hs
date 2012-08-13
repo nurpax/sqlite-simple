@@ -45,10 +45,12 @@ import           Control.Monad (void, when)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 import           Data.ByteString (ByteString)
+import qualified Data.Text as T
 import           Data.Typeable (Typeable)
 import           Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
 import qualified Data.ByteString.Char8 as B
+
 
 import           Database.SQLite.Simple.FromField (ResultError(..))
 import           Database.SQLite.Simple.Internal
@@ -133,7 +135,7 @@ withBind templ stmt qp action = do
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute (Connection c) template@(Query t) qs = do
-  bracket (Base.prepare c (utf8ToString t)) Base.finalize go
+  bracket (Base.prepare c (T.unpack t)) Base.finalize go
   where
     go stmt = withBind template stmt (toRow qs) (void $ Base.step stmt)
 
@@ -155,7 +157,7 @@ execute (Connection c) template@(Query t) qs = do
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query (Connection conn) templ@(Query t) qs = do
-  bracket (Base.prepare conn (utf8ToString t)) Base.finalize go
+  bracket (Base.prepare conn (T.unpack t)) Base.finalize go
   where
     go stmt = withBind templ stmt (toRow qs) (stepStmt stmt >>= finishQuery)
 
@@ -168,7 +170,7 @@ query_ conn (Query que) = do
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
 execute_ (Connection conn) (Query que) =
-  bracket (Base.prepare conn (utf8ToString que)) Base.finalize go
+  bracket (Base.prepare conn (T.unpack que)) Base.finalize go
     where
       go stmt = void $ Base.step stmt
 
