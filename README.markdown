@@ -17,6 +17,8 @@ Building
 
 The usual cabal/cabal-dev instructions apply.
 
+[![Continuous Integration status][status-png]][status]
+
 NOTE: as of Aug 12, the package relies on an unreleased version of
 direct-sqlite, so the git HEAD currently doesn't build out of the box.
 
