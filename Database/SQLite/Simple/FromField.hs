@@ -34,38 +34,26 @@ module Database.SQLite.Simple.FromField
     , Field
     ) where
 
--- TODO
-import Debug.Trace
-
 #include "MachDeps.h"
 
-import           Control.Applicative
-                   ( Applicative, (<|>), (<$>), pure )
+import           Control.Applicative (Applicative, (<$>), pure)
 import           Control.Exception (SomeException(..), Exception)
 import           Data.Attoparsec.Char8 hiding (Result)
-import           Data.Bits ((.&.), (.|.), shiftL)
+import           Data.Bits ((.|.), shiftL)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString as SB
-import qualified Data.ByteString.Char8 as B8
-import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
-import           Data.Maybe
-import           Data.Ratio (Ratio)
-import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
+import           Data.Time (UTCTime, Day)
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
-import qualified Data.Text.Lazy as LT
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
-import           System.IO.Unsafe (unsafePerformIO)
 
 import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
-import           Database.SQLite.Simple.Time
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.
@@ -172,12 +160,11 @@ mkCompats = foldl' f (Compat 0) . map mkCompat
 mkCompat :: BuiltinType -> Compat
 mkCompat = Compat . shiftL 1 . fromEnum
 
-compat :: Compat -> Compat -> Bool
-compat (Compat a) (Compat b) = a .&. b /= 0
+--compat :: Compat -> Compat -> Bool
+--compat (Compat a) (Compat b) = a .&. b /= 0
 
-okText, okBinary, ok16, ok32, ok64, okInt :: Compat
+okText, ok16, ok32, ok64, okInt :: Compat
 okText   = mkCompats [SQL3Text]
-okBinary = mkCompats [SQL3Blob]
 ok16 = mkCompats [SQL3Int]
 ok32 = mkCompats [SQL3Int]
 ok64 = mkCompats [SQL3Int]
@@ -190,7 +177,7 @@ okInt = ok64
 doFromField :: forall a . (Typeable a)
           => Field -> Compat -> (ByteString -> Ok a)
           -> Maybe ByteString -> Ok a
-doFromField f types cvt (Just bs) | otherwise = cvt bs
+doFromField _f _types cvt (Just bs) | otherwise = cvt bs
 --    | mkCompat typ `compat` types = cvt bs
 --    | otherwise = returnError Incompatible f "types incompatible"
 

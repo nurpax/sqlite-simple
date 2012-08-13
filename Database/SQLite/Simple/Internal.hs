@@ -20,30 +20,18 @@
 
 module Database.SQLite.Simple.Internal where
 
-import Debug.Trace
-
 import Prelude hiding (catch)
 
 import           Control.Applicative
 import           Control.Exception
-import           Control.Concurrent.MVar
 import           Data.ByteString(ByteString)
-import qualified Data.ByteString       as B
 import qualified Data.ByteString.Char8 as B8
-import           Data.Char (ord)
-import           Data.Int (Int64)
-import qualified Data.IntMap as IntMap
-import           Data.String
-import           Data.Typeable
-import           Data.Word
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
-import           System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as TE
 
-import           Database.SQLite.Simple.Types
 import           Database.SQLite.Simple.Ok
 import qualified Database.SQLite3 as Base
 
@@ -80,6 +68,7 @@ sqldataToByteString :: Base.SQLData -> Maybe ByteString
 sqldataToByteString (Base.SQLInteger v) = Just $ (B8.pack (show v))
 sqldataToByteString (Base.SQLText s) = Just . B8.pack $ s
 sqldataToByteString (Base.SQLFloat f) = Just . B8.pack $ (show f)
+sqldataToByteString (Base.SQLBlob f) = Just f
 sqldataToByteString Base.SQLNull = Nothing
 
 utf8ToString :: ByteString -> String

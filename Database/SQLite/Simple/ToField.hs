@@ -19,25 +19,18 @@
 
 module Database.SQLite.Simple.ToField (ToField(..)) where
 
-import           Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
-import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
-import           Blaze.ByteString.Builder.Char8 (fromChar)
-import           Blaze.Text (integral, double, float)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int8, Int16, Int32, Int64)
-import           Data.Monoid (mappend)
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
-import           Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime)
-import           Data.Typeable (Typeable)
+import           Data.Time (Day, UTCTime)
 import           Data.Word (Word, Word8, Word16, Word32, Word64)
 import           GHC.Float
 
 import           Database.SQLite3 as Base
-import           Database.SQLite.Simple.Time
 import           Database.SQLite.Simple.Types (Binary(..), In(..), Null)
 
 -- | A type that may be used as a single parameter to a SQL query.

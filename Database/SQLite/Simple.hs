@@ -38,32 +38,22 @@ module Database.SQLite.Simple (
   , ResultError(errSQLType, errHaskellType, errMessage)
   ) where
 
-import           Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
-import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Control.Applicative
 import           Control.Exception
-  ( Exception, onException, throw, throwIO, finally, bracket )
+  ( Exception, throw, throwIO, bracket )
 import           Control.Monad (void, when)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 import           Data.ByteString (ByteString)
-import           Data.List (intersperse)
-import           Data.Monoid (mappend, mconcat)
 import           Data.Typeable (Typeable)
 import           Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
 import qualified Data.ByteString.Char8 as B
-import qualified Data.Text          as T
-import qualified Data.Text.Encoding as TE
 
 import           Database.SQLite.Simple.FromField (ResultError(..))
-import           Database.SQLite.Simple.FromRow (FromRow(..))
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
-import           Database.SQLite.Simple.ToField
 import           Database.SQLite.Simple.ToRow (ToRow(..))
-import           Database.SQLite.Simple.Types(
-  Binary(..), In(..), Only(..), Query(..), (:.)(..))
 import           Database.SQLite.Simple.FromRow
 
 {- $use
