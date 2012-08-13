@@ -20,7 +20,7 @@ assertResultErrorCaught action = do
 assertFormatErrorCaught :: IO a -> Assertion
 assertFormatErrorCaught action = do
   catch (action >> return False) (\(_ :: FormatError) -> return True) >>=
-    assertBool "assertResultError exc"
+    assertBool "assertFormatError exc"
 
 testErrorsColumns :: TestEnv -> Test
 testErrorsColumns TestEnv{..} = TestCase $ do
