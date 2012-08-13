@@ -7,6 +7,9 @@ module Errors (
 
 import Prelude hiding (catch)
 import Control.Exception
+import qualified Data.ByteString as B
+import Data.Word
+
 import Common
 
 assertResultErrorCaught :: IO a -> Assertion
@@ -32,6 +35,13 @@ testErrorsColumns TestEnv{..} = TestCase $ do
   assertResultErrorCaught (query_ conn "SELECT id FROM cols" :: IO [(Int, String)])
   -- Mismatching types (source int,text doesn't match dst string,int
   assertResultErrorCaught (query_ conn "SELECT id, t FROM cols" :: IO [(String, Int)])
+  -- Trying to get a blob into a string
+  let d = B.pack ([0..127] :: [Word8])
+  execute_ conn "CREATE TABLE cols_blobs (id INTEGER, b BLOB)"
+  execute conn "INSERT INTO cols_blobs (id, b) VALUES (?,?)" (1 :: Int, d)
+  assertResultErrorCaught
+    (do [Only _t1] <- query conn "SELECT b FROM cols_blobs WHERE id = ?" (Only (1 :: Int)) :: IO [Only String]
+        return ())
 
 testErrorsInvalidParams :: TestEnv -> Test
 testErrorsInvalidParams TestEnv{..} = TestCase $ do

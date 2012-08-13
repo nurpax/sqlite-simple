@@ -132,19 +132,30 @@ instance FromField ST.Text where
     -- FIXME:  check character encoding
 
 instance FromField [Char] where
-  fromField f dat = ST.unpack <$> fromField f dat
+  fromField f _ =
+    case result f of
+      SQLText t -> Ok $ t
+      _ -> returnError ConversionFailed f "expecting SQLText column type"
+
+-- TODO ToRow has both ST and LB variants of ByteString, check what's
+-- really needed here
+instance FromField ByteString where
+  fromField f _ =
+    case result f of
+      SQLBlob t -> Ok $ t
+      _ -> returnError ConversionFailed f "expecting SQLBlob column type"
 
 instance FromField UTCTime where
   fromField f _ =
     case result f of
       SQLText t -> Ok $ read t
-      _ -> returnError ConversionFailed f "expecting SQLText column type for UTCTime"
+      _ -> returnError ConversionFailed f "expecting SQLText column type"
 
 instance FromField Day where
   fromField f _ =
     case result f of
       SQLText t -> Ok $ read t
-      _ -> returnError ConversionFailed f "expecting SQLText column type for Day"
+      _ -> returnError ConversionFailed f "expecting SQLText column type"
 
 newtype Compat = Compat Word64
 

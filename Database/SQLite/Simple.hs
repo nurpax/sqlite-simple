@@ -30,7 +30,6 @@ module Database.SQLite.Simple (
   , ToRow
   , FromRow
   , In(..)
-  , Binary(..)
   , Only(..)
   , (:.)(..)
     -- ** Exceptions

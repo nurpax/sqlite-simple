@@ -19,19 +19,17 @@
 
 module Database.SQLite.Simple.ToField (ToField(..)) where
 
-import           Data.ByteString (ByteString)
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.Text as ST
-import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
 import           Data.Time (Day, UTCTime)
 import           Data.Word (Word, Word8, Word16, Word32, Word64)
 import           GHC.Float
 
 import           Database.SQLite3 as Base
-import           Database.SQLite.Simple.Types (Binary(..), In(..), Null)
+import           Database.SQLite.Simple.Types (In(..), Null)
 
 -- | A type that may be used as a single parameter to a SQL query.
 class ToField a where
@@ -112,14 +110,6 @@ instance ToField Double where
     toField = SQLFloat
     {-# INLINE toField #-}
 
-instance ToField (Binary SB.ByteString) where
-    toField (Binary bs) = SQLBlob bs
-    {-# INLINE toField #-}
-
-instance ToField (Binary LB.ByteString) where
-    toField (Binary bs) = (SQLBlob . SB.concat . LB.toChunks) bs
-    {-# INLINE toField #-}
-
 instance ToField SB.ByteString where
     toField = SQLBlob
     {-# INLINE toField #-}
@@ -128,12 +118,8 @@ instance ToField LB.ByteString where
     toField = toField . SB.concat . LB.toChunks
     {-# INLINE toField #-}
 
--- TODO is it ok to stick text into blob fields in the db?
-sqltextFromBS :: ByteString -> SQLData
-sqltextFromBS = SQLBlob
-
 instance ToField ST.Text where
-    toField = sqltextFromBS . ST.encodeUtf8
+    toField = SQLText . ST.unpack
     {-# INLINE toField #-}
 
 instance ToField [Char] where

@@ -21,6 +21,7 @@ tests =
     , TestLabel "Errors"    . testErrorsColumns
     , TestLabel "Errors"    . testErrorsInvalidParams
     , TestLabel "Utf8"      . testUtf8Simplest
+    , TestLabel "Utf8"      . testBlobs
     ]
 
 -- | Action for connecting to the database that will be used for testing.

@@ -21,7 +21,6 @@ module Database.SQLite.Simple.Types
       Null(..)
     , Only(..)
     , In(..)
-    , Binary(..)
     , Query(..)
     , (:.)(..)
     ) where
@@ -102,10 +101,6 @@ newtype Only a = Only {
 --
 -- > query c "select * from whatever where id in ?" (In [3,4,5])
 newtype In a = In a
-    deriving (Eq, Ord, Read, Show, Typeable, Functor)
-
--- | Wrap binary data for use as a @bytea@ value.
-newtype Binary a = Binary a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 -- | A composite type to parse your custom data structures without
