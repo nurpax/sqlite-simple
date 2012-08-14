@@ -25,12 +25,11 @@ import           Prelude hiding (catch)
 import           Control.Applicative
 import           Control.Exception
 import           Data.ByteString (ByteString)
-import qualified Data.ByteString.Char8 as B8
+import           Data.ByteString.Char8()
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 
 import qualified Data.Text          as T
-import qualified Data.Text.Encoding as TE
 
 import           Database.SQLite.Simple.Ok
 import qualified Database.SQLite3 as Base
@@ -60,16 +59,6 @@ gettypename (Base.SQLFloat _) = "FLOAT"
 gettypename (Base.SQLText _) = "TEXT"
 gettypename (Base.SQLBlob _) = "BLOB"
 gettypename Base.SQLNull = "NULL"
-
--- TODO this is horrible a kludge!!  There should be no need for any
--- conversion here.  Should just take an int and use that value
--- directly.
-sqldataToByteString :: Base.SQLData -> Maybe ByteString
-sqldataToByteString (Base.SQLInteger v) = Just $ (B8.pack (show v))
-sqldataToByteString (Base.SQLText s) = Just . TE.encodeUtf8 $ s
-sqldataToByteString (Base.SQLFloat f) = Just . B8.pack $ (show f)
-sqldataToByteString (Base.SQLBlob f) = Just f
-sqldataToByteString Base.SQLNull = Nothing
 
 exec :: Connection -> T.Text -> IO Result
 exec (Connection conn) q =

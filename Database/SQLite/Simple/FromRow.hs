@@ -33,7 +33,6 @@ import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import           Data.Maybe
 
 import           Database.SQLite.Simple.FromField
 import           Database.SQLite.Simple.Internal
@@ -82,10 +81,9 @@ fieldWith fieldP = RP $ do
               \convert and number in target type"
       lift (lift (Errors [SomeException convertError]))
     else do
-      -- TODO get rid of sqldataToByteString here - the types are just wrong for fieldP
       let r = rowresult !! column
           field = Field r column
-      lift (lift (fieldP field (sqldataToByteString r)))
+      lift (lift (fieldP field))
 
 field :: FromField a => RowParser a
 field = fieldWith fromField
@@ -95,7 +93,7 @@ ellipsis sql
     | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
     | otherwise        = bs
   where
-    bs = fromMaybe "NULL" (sqldataToByteString sql)
+    bs = B.pack $ show sql
 
 numFieldsRemaining :: RowParser Int
 numFieldsRemaining = RP $ do

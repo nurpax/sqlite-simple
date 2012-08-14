@@ -33,10 +33,7 @@ Library
      Database.SQLite.Simple.Types
 
   Build-depends:
-    attoparsec >= 0.8.5.3,
     base < 5,
-    blaze-builder,
-    blaze-textual,
     bytestring >= 0.9,
     containers,
     direct-sqlite >= 2.0,

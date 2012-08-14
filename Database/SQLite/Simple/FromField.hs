@@ -38,17 +38,12 @@ module Database.SQLite.Simple.FromField
 
 import           Control.Applicative (Applicative, (<$>), pure)
 import           Control.Exception (SomeException(..), Exception)
-import           Data.Attoparsec.Char8 hiding (Result)
-import           Data.Bits ((.|.), shiftL)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
-import           Data.List (foldl')
 import           Data.Time (UTCTime, Day)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import           Data.Typeable (Typeable, typeOf)
-import           Data.Word (Word64)
 
 import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types
@@ -80,7 +75,7 @@ instance Exception ResultError
 left :: Exception a => a -> Ok b
 left = Errors . (:[]) . SomeException
 
-type FieldParser a = Field -> Maybe ByteString -> Ok a
+type FieldParser a = Field -> Ok a
 
 -- | A type that may be converted from a SQL type.
 class FromField a where
@@ -101,100 +96,58 @@ class FromField a where
     -- and 'B.takeWhile' alone will also trigger this memory leak.
 
 instance (FromField a) => FromField (Maybe a) where
-    fromField _ Nothing = pure Nothing
-    fromField f bs      = Just <$> fromField f bs
+    fromField (Field SQLNull _) = pure Nothing
+    fromField f                 = Just <$> fromField f
 
 instance FromField Null where
-    fromField _ Nothing  = pure Null
-    fromField f (Just _) = returnError ConversionFailed f "data is not null"
+    fromField (Field SQLNull _) = pure Null
+    fromField f                 = returnError ConversionFailed f "data is not null"
 
 instance FromField Int16 where
-    fromField = atto ok16 $ signed decimal
+    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
+    fromField f = returnError ConversionFailed f "need an int"
 
 instance FromField Int32 where
-    fromField = atto ok32 $ signed decimal
+    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
+    fromField f = returnError ConversionFailed f "need an int"
 
 instance FromField Int where
-    fromField = atto okInt $ signed decimal
+    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
+    fromField f = returnError ConversionFailed f "need an int"
 
 instance FromField Int64 where
-    fromField = atto ok64 $ signed decimal
+    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
+    fromField f = returnError ConversionFailed f "need an int"
 
 instance FromField Integer where
-    fromField = atto ok64 $ signed decimal
+    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
+    fromField f = returnError ConversionFailed f "need an int"
 
 instance FromField Double where
-    fromField = atto ok double
-        where ok = mkCompats [SQL3Float]
+    fromField (Field (SQLFloat flt) _) = Ok flt
+    fromField f = returnError ConversionFailed f "need a float"
 
 instance FromField T.Text where
-    fromField f = doFromField f okText $ (either left pure . T.decodeUtf8')
-    -- FIXME:  check character encoding
+    fromField (Field (SQLText txt) _) = Ok txt
+    fromField f = returnError ConversionFailed f "need a text"
 
 instance FromField [Char] where
-  fromField f _ =
-    case result f of
-      SQLText t -> Ok $ T.unpack t
-      _ -> returnError ConversionFailed f "expecting SQLText column type"
+  fromField (Field (SQLText t) _) = Ok $ T.unpack t
+  fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
 -- TODO ToRow has both T and LB variants of ByteString, check what's
 -- really needed here
 instance FromField ByteString where
-  fromField f _ =
-    case result f of
-      SQLBlob t -> Ok $ t
-      _ -> returnError ConversionFailed f "expecting SQLBlob column type"
+  fromField (Field (SQLBlob blb) _) = Ok blb
+  fromField f = returnError ConversionFailed f "expecting SQLBlob column type"
 
 instance FromField UTCTime where
-  fromField f _ =
-    case result f of
-      SQLText t -> Ok . read . T.unpack $ t
-      _ -> returnError ConversionFailed f "expecting SQLText column type"
+  fromField (Field (SQLText t) _) = Ok . read . T.unpack $ t
+  fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
 instance FromField Day where
-  fromField f _ =
-    case result f of
-      SQLText t -> Ok . read . T.unpack $ t
-      _ -> returnError ConversionFailed f "expecting SQLText column type"
-
-newtype Compat = Compat Word64
-
--- TODO should move these to direct-sqlite?
-data BuiltinType =
-  SQL3Int | SQL3Float | SQL3Text | SQL3Blob
-  deriving (Enum, Eq)
-
-mkCompats :: [BuiltinType] -> Compat
-mkCompats = foldl' f (Compat 0) . map mkCompat
-  where f (Compat a) (Compat b) = Compat (a .|. b)
-
-mkCompat :: BuiltinType -> Compat
-mkCompat = Compat . shiftL 1 . fromEnum
-
---compat :: Compat -> Compat -> Bool
---compat (Compat a) (Compat b) = a .&. b /= 0
-
-okText, ok16, ok32, ok64, okInt :: Compat
-okText   = mkCompats [SQL3Text]
-ok16 = mkCompats [SQL3Int]
-ok32 = mkCompats [SQL3Int]
-ok64 = mkCompats [SQL3Int]
-#if WORD_SIZE_IN_BITS < 64
-okInt = ok32
-#else
-okInt = ok64
-#endif
-
-doFromField :: forall a . (Typeable a)
-          => Field -> Compat -> (ByteString -> Ok a)
-          -> Maybe ByteString -> Ok a
-doFromField _f _types cvt (Just bs) | otherwise = cvt bs
---    | mkCompat typ `compat` types = cvt bs
---    | otherwise = returnError Incompatible f "types incompatible"
-
-
-doFromField f _ _ _ = returnError UnexpectedNull f ""
-
+  fromField (Field (SQLText t) _) = Ok . read . T.unpack $ t
+  fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
 fieldTypename :: Field -> String
 fieldTypename = B.unpack . gettypename . result
@@ -208,14 +161,3 @@ returnError :: forall a err . (Typeable a, Exception err)
             -> Field -> String -> Ok a
 returnError mkErr f = left . mkErr (fieldTypename f)
                                    (show (typeOf (undefined :: a)))
-
-atto :: forall a. (Typeable a)
-     => Compat -> Parser a -> Field -> Maybe ByteString
-     -> Ok a
-atto types p0 f dat = doFromField f types (go p0) dat
-  where
-    go :: Parser a -> ByteString -> Ok a
-    go p s =
-        case parseOnly p s of
-          Left err -> returnError ConversionFailed f err
-          Right  v -> pure v
