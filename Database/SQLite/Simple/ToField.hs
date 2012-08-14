@@ -22,7 +22,7 @@ module Database.SQLite.Simple.ToField (ToField(..)) where
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int8, Int16, Int32, Int64)
-import qualified Data.Text as ST
+import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Time (Day, UTCTime)
 import           Data.Word (Word, Word8, Word16, Word32, Word64)
@@ -118,25 +118,24 @@ instance ToField LB.ByteString where
     toField = toField . SB.concat . LB.toChunks
     {-# INLINE toField #-}
 
-instance ToField ST.Text where
-    toField = SQLText . ST.unpack
+instance ToField T.Text where
+    toField = SQLText
     {-# INLINE toField #-}
 
 instance ToField [Char] where
-    toField = SQLText
+    toField = SQLText . T.pack
     {-# INLINE toField #-}
 
 instance ToField LT.Text where
     toField = toField . LT.toStrict
     {-# INLINE toField #-}
 
-
 instance ToField UTCTime where
-    toField = SQLText . show
+    toField = SQLText . T.pack . show
     {-# INLINE toField #-}
 
 instance ToField Day where
-    toField = SQLText . show
+    toField = SQLText . T.pack . show
     {-# INLINE toField #-}
 
 -- TODO enable these

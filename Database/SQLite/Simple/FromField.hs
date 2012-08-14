@@ -45,8 +45,8 @@ import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
 import           Data.Time (UTCTime, Day)
-import qualified Data.Text as ST
-import qualified Data.Text.Encoding as ST
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
 
@@ -127,17 +127,17 @@ instance FromField Double where
     fromField = atto ok double
         where ok = mkCompats [SQL3Float]
 
-instance FromField ST.Text where
-    fromField f = doFromField f okText $ (either left pure . ST.decodeUtf8')
+instance FromField T.Text where
+    fromField f = doFromField f okText $ (either left pure . T.decodeUtf8')
     -- FIXME:  check character encoding
 
 instance FromField [Char] where
   fromField f _ =
     case result f of
-      SQLText t -> Ok $ t
+      SQLText t -> Ok $ T.unpack t
       _ -> returnError ConversionFailed f "expecting SQLText column type"
 
--- TODO ToRow has both ST and LB variants of ByteString, check what's
+-- TODO ToRow has both T and LB variants of ByteString, check what's
 -- really needed here
 instance FromField ByteString where
   fromField f _ =
@@ -148,13 +148,13 @@ instance FromField ByteString where
 instance FromField UTCTime where
   fromField f _ =
     case result f of
-      SQLText t -> Ok $ read t
+      SQLText t -> Ok . read . T.unpack $ t
       _ -> returnError ConversionFailed f "expecting SQLText column type"
 
 instance FromField Day where
   fromField f _ =
     case result f of
-      SQLText t -> Ok $ read t
+      SQLText t -> Ok . read . T.unpack $ t
       _ -> returnError ConversionFailed f "expecting SQLText column type"
 
 newtype Compat = Compat Word64

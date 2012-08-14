@@ -39,7 +39,7 @@ Library
     blaze-textual,
     bytestring >= 0.9,
     containers,
-    direct-sqlite >= 1.1,
+    direct-sqlite >= 2.0,
     text >= 0.11.1,
     time,
     transformers
