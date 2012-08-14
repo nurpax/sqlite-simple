@@ -30,11 +30,8 @@ module Database.SQLite.Simple.FromField
       FromField(..)
     , FieldParser
     , ResultError(..)
-
     , Field
     ) where
-
-#include "MachDeps.h"
 
 import           Control.Applicative (Applicative, (<$>), pure)
 import           Control.Exception (SomeException(..), Exception)
@@ -103,51 +100,50 @@ instance FromField Null where
     fromField (Field SQLNull _) = pure Null
     fromField f                 = returnError ConversionFailed f "data is not null"
 
+takeInt :: (Num a, Typeable a) => Field -> Ok a
+takeInt (Field (SQLInteger i) _) = Ok . fromIntegral $ i
+takeInt f                        = returnError ConversionFailed f "need an int"
+
 instance FromField Int16 where
-    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
-    fromField f = returnError ConversionFailed f "need an int"
+    fromField = takeInt
 
 instance FromField Int32 where
-    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
-    fromField f = returnError ConversionFailed f "need an int"
+    fromField = takeInt
 
 instance FromField Int where
-    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
-    fromField f = returnError ConversionFailed f "need an int"
+    fromField = takeInt
 
 instance FromField Int64 where
-    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
-    fromField f = returnError ConversionFailed f "need an int"
+    fromField = takeInt
 
 instance FromField Integer where
-    fromField (Field (SQLInteger i) _) = Ok . fromIntegral $ i
-    fromField f = returnError ConversionFailed f "need an int"
+    fromField = takeInt
 
 instance FromField Double where
     fromField (Field (SQLFloat flt) _) = Ok flt
-    fromField f = returnError ConversionFailed f "need a float"
+    fromField f                        = returnError ConversionFailed f "need a float"
 
 instance FromField T.Text where
     fromField (Field (SQLText txt) _) = Ok txt
-    fromField f = returnError ConversionFailed f "need a text"
+    fromField f                       = returnError ConversionFailed f "need a text"
 
 instance FromField [Char] where
   fromField (Field (SQLText t) _) = Ok $ T.unpack t
-  fromField f = returnError ConversionFailed f "expecting SQLText column type"
+  fromField f                     = returnError ConversionFailed f "expecting SQLText column type"
 
 -- TODO ToRow has both T and LB variants of ByteString, check what's
 -- really needed here
 instance FromField ByteString where
   fromField (Field (SQLBlob blb) _) = Ok blb
-  fromField f = returnError ConversionFailed f "expecting SQLBlob column type"
+  fromField f                       = returnError ConversionFailed f "expecting SQLBlob column type"
 
 instance FromField UTCTime where
   fromField (Field (SQLText t) _) = Ok . read . T.unpack $ t
-  fromField f = returnError ConversionFailed f "expecting SQLText column type"
+  fromField f                     = returnError ConversionFailed f "expecting SQLText column type"
 
 instance FromField Day where
   fromField (Field (SQLText t) _) = Ok . read . T.unpack $ t
-  fromField f = returnError ConversionFailed f "expecting SQLText column type"
+  fromField f                     = returnError ConversionFailed f "expecting SQLText column type"
 
 fieldTypename :: Field -> String
 fieldTypename = B.unpack . gettypename . result

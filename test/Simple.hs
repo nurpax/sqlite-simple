@@ -28,6 +28,10 @@ testSimpleSelect TestEnv{..} = TestCase $ do
   assertEqual "row count" 2 (length rows)
   assertEqual "int,string" (1, "test string") (rows !! 0)
   assertEqual "int,string" (2, "test string 2") (rows !! 1)
+  [Only r] <- query_ conn "SELECT NULL" :: IO [Only (Maybe Int)]
+  assertEqual "nulls" Nothing r
+  [Only r] <- query_ conn "SELECT 1" :: IO [Only (Maybe Int)]
+  assertEqual "nulls" (Just 1) r
 
 testSimpleParams :: TestEnv -> Test
 testSimpleParams TestEnv{..} = TestCase $ do
