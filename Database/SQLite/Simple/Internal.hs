@@ -34,6 +34,7 @@ import qualified Data.Text          as T
 import           Database.SQLite.Simple.Ok
 import qualified Database.SQLite3 as Base
 
+-- | Connection to an open database.
 data Connection = Connection Base.Database
 
 -- | A Field represents metadata about a particular field

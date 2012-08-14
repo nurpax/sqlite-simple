@@ -55,9 +55,8 @@ instance Eq Null where
 -- > q :: Query
 -- > q = "select ?"
 --
--- The underlying type is a 'ByteString', and literal Haskell strings
--- that contain Unicode characters will be correctly transformed to
--- UTF-8.
+-- The underlying type is a 'Text', and literal Haskell strings that
+-- contain Unicode characters will be correctly transformed to UTF-8.
 newtype Query = Query {
       fromQuery :: T.Text
     } deriving (Eq, Ord, Typeable)

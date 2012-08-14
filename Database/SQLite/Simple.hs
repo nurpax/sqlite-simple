@@ -81,13 +81,14 @@ instance FromRow TestField where
 main :: IO ()
 main = do
   conn <- open \"test.db\"
+  execute conn \"INSERT INTO test (str) VALUES (?)\" (Only (\"test string 2\" :: String))
   r <- query_ conn \"SELECT * from test\" :: IO [TestField]
   mapM_ print r
   close conn
 @
 -}
 
--- | Exception thrown if a 'Query' could not be formatted correctly.
+-- | Exception thrown if a 'Query' was malformed.
 -- This may occur if the number of \'@?@\' characters in the query
 -- string does not match the number of parameters provided.
 data FormatError = FormatError {
@@ -102,6 +103,11 @@ instance Exception FormatError
 -- exception if it cannot connect.
 --
 -- Every 'open' must be closed with a call to 'close'.
+--
+-- If you specify \":memory:\" or an empty string as the input filename,
+-- then a private, temporary in-memory database is created for the
+-- connection.  This database will vanish when you close the
+-- connection.
 open :: String -> IO Connection
 open fname = Connection <$> Base.open fname
 

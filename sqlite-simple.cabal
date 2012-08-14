@@ -84,3 +84,4 @@ test-suite test
                , sqlite-simple
                , text
                , time
+
