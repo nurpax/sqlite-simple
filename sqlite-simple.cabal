@@ -19,9 +19,10 @@ bug-reports:         http://github.com/nurpax/sqlite-simple/issues
 Category:            Database
 Build-type:          Simple
 
-Cabal-version:       >= 1.9.2
+Cabal-version:       >= 1.10
 
 Library
+  Default-language:  Haskell2010
   Exposed-modules:
      Database.SQLite.Simple
      Database.SQLite.Simple.Ok
@@ -41,8 +42,12 @@ Library
     time,
     transformers
 
-  extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
-              TypeOperators
+  default-extensions:
+      DoAndIfThenElse
+    , OverloadedStrings
+    , BangPatterns
+    , ViewPatterns
+    , TypeOperators
 
   ghc-options: -Wall -fno-warn-name-shadowing
 
@@ -52,7 +57,8 @@ source-repository head
 
 
 test-suite test
-  type:           exitcode-stdio-1.0
+  default-language: Haskell2010
+  type:             exitcode-stdio-1.0
 
   hs-source-dirs: test
   main-is:        Main.hs
@@ -65,10 +71,11 @@ test-suite test
 
   ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
 
-  extensions: NamedFieldPuns
-            , OverloadedStrings
-            , Rank2Types
-            , RecordWildCards
+  default-extensions:
+      NamedFieldPuns
+    , OverloadedStrings
+    , Rank2Types
+    , RecordWildCards
 
   build-depends: base
                , base16-bytestring
