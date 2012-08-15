@@ -33,7 +33,7 @@ INSERT INTO test (str) VALUES ('test string');"
 
 ..and access it in Haskell:
 
-```
+```haskell
 import Control.Applicative
 import Database.SQLite.Simple
 import Database.SQLite.Simple.FromRow
