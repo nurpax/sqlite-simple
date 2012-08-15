@@ -1,8 +1,6 @@
 sqlite-simple: mid-level bindings to the sqlite database
 ========================================================
 
-## THIS LIBRARY IS VERY MUCH WIP! Use at your own risk
-
 This library is a mid-level Haskell binding to the SQLite database.
 
 Sqlite-simple provides a convenient API to sqlite that does some level
@@ -12,15 +10,15 @@ The API has been modeled directly after
 in turn borrows from
 [mysql-simple](https://github.com/bos/mysql-simple).
 
+The library has been fairly well unit tested, but I still consider it
+somewhat experimental.
+
 Building
 --------
 
 The usual cabal/cabal-dev instructions apply.
 
 [![Build Status](https://secure.travis-ci.org/nurpax/sqlite-simple.png)](http://travis-ci.org/nurpax/sqlite-simple)
-
-NOTE: as of Aug 12, the package relies on an unreleased version of
-direct-sqlite, so the git HEAD currently doesn't build out of the box.
 
 Examples of use
 ---------------
@@ -40,8 +38,7 @@ import Control.Applicative
 import Database.SQLite.Simple
 import Database.SQLite.Simple.FromRow
 
-data TestField = TestField Int String
-                 deriving (Show)
+data TestField = TestField Int String deriving (Show)
 
 instance FromRow TestField where
   fromRow = TestField <$> field <*> field
@@ -49,6 +46,8 @@ instance FromRow TestField where
 main :: IO ()
 main = do
   conn <- open "test.db"
+  execute conn "INSERT INTO test (str) VALUES (?)"
+    (Only ("test string 2" :: String))
   r <- query_ conn "SELECT * from test" :: IO [TestField]
   mapM_ print r
   close conn
