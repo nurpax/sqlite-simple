@@ -148,9 +148,6 @@ execute (Connection c) template@(Query t) qs = do
 --
 -- * 'FormatError': the query string mismatched with given arguments.
 --
--- * 'QueryError': the result contains no columns (i.e. you should be
---   using 'execute' instead of 'query').
---
 -- * 'ResultError': result conversion failed.
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
@@ -254,7 +251,7 @@ fmtError msg q xs = throw FormatError {
 -- > import Database.SQLite.Simple
 -- >
 -- > hello = do
--- >   conn <- connect defaultConnectInfo
+-- >   conn <- open "test.db"
 -- >   query conn "select 2 + 2"
 --
 -- A 'Query' value does not represent the actual query that will be
@@ -327,84 +324,13 @@ fmtError msg q xs = throw FormatError {
 -- Haskell lacks a single-element tuple type, so if you have just one
 -- value you want substituted into a query, what should you do?
 --
--- The obvious approach would appear to be something like this:
---
--- > instance (Param a) => QueryParam a where
--- >     ...
---
--- Unfortunately, this wreaks havoc with type inference, so we take a
--- different tack. To represent a single value @val@ as a parameter, write
--- a singleton list @[val]@, use 'Just' @val@, or use 'Only' @val@.
+-- To represent a single value @val@ as a parameter, write a singleton
+-- list @[val]@, use 'Just' @val@, or use 'Only' @val@.
 --
 -- Here's an example using a singleton list:
 --
 -- > execute conn "insert into users (first_name) values (?)"
 -- >              ["Nuala"]
-
--- $in
---
--- Suppose you want to write a query using an @IN@ clause:
---
--- > select * from users where first_name in ('Anna', 'Boris', 'Carla')
---
--- In such cases, it's common for both the elements and length of the
--- list after the @IN@ keyword to vary from query to query.
---
--- To address this case, use the 'In' type wrapper, and use a single
--- \"@?@\" character to represent the list.  Omit the parentheses
--- around the list; these will be added for you.
---
--- Here's an example:
---
--- > query conn "select * from users where first_name in ?" $
--- >       In ["Anna", "Boris", "Carla"]
---
--- If your 'In'-wrapped list is empty, the string @\"(null)\"@ will be
--- substituted instead, to ensure that your clause remains
--- syntactically valid.
-
--- $many
---
--- If you know that you have many rows of data to insert into a table,
--- it is much more efficient to perform all the insertions in a single
--- multi-row @INSERT@ statement than individually.
---
--- The 'executeMany' function is intended specifically for helping
--- with multi-row @INSERT@ and @UPDATE@ statements. Its rules for
--- query substitution are different than those for 'execute'.
---
--- What 'executeMany' searches for in your 'Query' template is a
--- single substring of the form:
---
--- > values (?,?,?)
---
--- The rules are as follows:
---
--- * The keyword @VALUES@ is matched case insensitively.
---
--- * There must be no other \"@?@\" characters anywhere in your
---   template.
---
--- * There must one or more \"@?@\" in the parentheses.
---
--- * Extra white space is fine.
---
--- The last argument to 'executeMany' is a list of parameter
--- tuples. These will be substituted into the query where the @(?,?)@
--- string appears, in a form suitable for use in a multi-row @INSERT@
--- or @UPDATE@.
---
--- Here is an example:
---
--- > executeMany conn
--- >   "insert into users (first_name,last_name) values (?,?)"
--- >   [("Boris","Karloff"),("Ed","Wood")]
---
--- The query that will be executed here will look like this
--- (reformatted for tidiness):
---
--- > insert into users (first_name,last_name) values
--- >   ('Boris','Karloff'),('Ed','Wood')
 
 -- $result
 --
@@ -414,11 +340,11 @@ fmtError msg q xs = throw FormatError {
 --
 -- Here is a simple example of how to extract results:
 --
--- > import qualified Data.Text as Text
+-- > import qualified Data.Text as T
 -- >
 -- > xs <- query_ conn "select name,age from users"
 -- > forM_ xs $ \(name,age) ->
--- >   putStrLn $ Text.unpack name ++ " is " ++ show (age :: Int)
+-- >   putStrLn $ T.unpack name ++ " is " ++ show (age :: Int)
 --
 -- Notice two important details about this code:
 --
