@@ -34,6 +34,7 @@ INSERT INTO test (str) VALUES ('test string');"
 ..and access it in Haskell:
 
 ```haskell
+{-# LANGUAGE OverloadedStrings #-}
 import Control.Applicative
 import Database.SQLite.Simple
 import Database.SQLite.Simple.FromRow

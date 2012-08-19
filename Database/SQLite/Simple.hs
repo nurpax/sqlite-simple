@@ -69,9 +69,11 @@ INSERT INTO test (str) VALUES ('test string');\"
 ..and access it from Haskell:
 
 @
-import           Control.Applicative
-import           Database.SQLite.Simple
-import           Database.SQLite.Simple.FromRow
+&#x7b;-\# LANGUAGE OverloadedStrings \#-&#x7d;
+
+import Control.Applicative
+import Database.SQLite.Simple
+import Database.SQLite.Simple.FromRow
 
 data TestField = TestField Int String deriving (Show)
 
