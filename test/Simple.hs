@@ -48,4 +48,5 @@ testSimpleParams TestEnv{..} = TestCase $ do
   assertEqual "select params" "test string" row
   [Only row] <- query conn "SELECT t FROM testparams WHERE id = ?" (Only (2 :: Int)) :: IO [Only String]
   assertEqual "select params" "test2" row
-  return ()
+  [Only i] <- query conn "SELECT ?+?" [42 :: Int, 1 :: Int] :: IO [Only Int]
+  assertEqual "select int param" 43 i

@@ -20,7 +20,6 @@ module Database.SQLite.Simple.Types
     (
       Null(..)
     , Only(..)
-    , In(..)
     , Query(..)
     , (:.)(..)
     ) where
@@ -91,16 +90,6 @@ instance Monoid Query where
 newtype Only a = Only {
       fromOnly :: a
     } deriving (Eq, Ord, Read, Show, Typeable, Functor)
-
--- | Wrap a list of values for use in an @IN@ clause.  Replaces a
--- single \"@?@\" character with a parenthesized list of rendered
--- values.
---
--- Example:
---
--- > query c "select * from whatever where id in ?" (In [3,4,5])
-newtype In a = In a
-    deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 -- | A composite type to parse your custom data structures without
 -- having to define dummy newtype wrappers every time.

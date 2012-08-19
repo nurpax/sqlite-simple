@@ -29,7 +29,7 @@ import           Data.Word (Word, Word8, Word16, Word32, Word64)
 import           GHC.Float
 
 import           Database.SQLite3 as Base
-import           Database.SQLite.Simple.Types (In(..), Null)
+import           Database.SQLite.Simple.Types (Null)
 
 -- | A type that may be used as a single parameter to a SQL query.
 class ToField a where
@@ -44,10 +44,6 @@ instance (ToField a) => ToField (Maybe a) where
     toField Nothing  = Base.SQLNull
     toField (Just a) = toField a
     {-# INLINE toField #-}
-
-instance (ToField a) => ToField (In [a]) where
-    toField (In _) =
-      error "NOT IMPLEMENTED see https://github.com/nurpax/sqlite-simple/issues/6"
 
 instance ToField Null where
     toField _ = Base.SQLNull

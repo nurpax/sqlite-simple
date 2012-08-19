@@ -29,7 +29,6 @@ module Database.SQLite.Simple (
   , Connection
   , ToRow
   , FromRow
-  , In(..)
   , Only(..)
   , (:.)(..)
     -- ** Exceptions
