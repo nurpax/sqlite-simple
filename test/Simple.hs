@@ -1,9 +1,14 @@
+{-# LANGUAGE OverloadedStrings #-}
 
 module Simple (
     testSimpleOnePlusOne
   , testSimpleSelect
-  , testSimpleParams) where
+  , testSimpleParams
+  , testSimpleTime
+  , testSimpleTimeFract) where
 
+import qualified Data.Text as T
+import Data.Time (UTCTime)
 import Common
 
 -- Simplest SELECT
@@ -50,3 +55,35 @@ testSimpleParams TestEnv{..} = TestCase $ do
   assertEqual "select params" "test2" row
   [Only i] <- query conn "SELECT ?+?" [42 :: Int, 1 :: Int] :: IO [Only Int]
   assertEqual "select int param" 43 i
+
+testSimpleTime :: TestEnv -> Test
+testSimpleTime TestEnv{..} = TestCase $ do
+  let timestr = "2012-08-20 20:19:58"
+      time    = read timestr :: UTCTime
+  execute_ conn "CREATE TABLE time (t TIMESTAMP)"
+  execute conn "INSERT INTO time (t) VALUES (?)" (Only time)
+  [Only t] <- query_ conn "SELECT * FROM time" :: IO [Only UTCTime]
+  assertEqual "UTCTime conv" time t
+  [Only t] <- query conn "SELECT * FROM time WHERE t = ?" (Only time) :: IO [Only UTCTime]
+  assertEqual "UTCTime conv2" time t
+  -- Try inserting timestamp directly as a string
+  execute_ conn "CREATE TABLE time2 (t TIMESTAMP)"
+  execute_ conn (Query (T.concat ["INSERT INTO time2 (t) VALUES ('", T.pack timestr, "')"]))
+  [Only t] <- query_ conn "SELECT * FROM time2" :: IO [Only UTCTime]
+  assertEqual "UTCTime" time t
+  rows <- query conn "SELECT * FROM time2 WHERE t = ?" (Only time) :: IO [Only UTCTime]
+  assertEqual "should see one row result" 1 (length rows)
+  assertEqual "UTCTime" time t
+
+testSimpleTimeFract :: TestEnv -> Test
+testSimpleTimeFract TestEnv{..} = TestCase $ do
+  let timestr = "2012-08-17 08:00:03.256887"
+      time    = read timestr :: UTCTime
+  -- Try inserting timestamp directly as a string
+  execute_ conn "CREATE TABLE timefract (t TIMESTAMP)"
+  execute_ conn (Query (T.concat ["INSERT INTO timefract (t) VALUES ('", T.pack timestr, "')"]))
+  [Only t] <- query_ conn "SELECT * FROM timefract" :: IO [Only UTCTime]
+  assertEqual "UTCTime" time t
+  rows <- query conn "SELECT * FROM timefract WHERE t = ?" (Only time) :: IO [Only UTCTime]
+  assertEqual "should see one row result" 1 (length rows)
+  assertEqual "UTCTime" time t

@@ -25,8 +25,10 @@ import           Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Time (Day, UTCTime)
+import           Data.Time.Format (formatTime)
 import           Data.Word (Word, Word8, Word16, Word32, Word64)
 import           GHC.Float
+import           System.Locale (defaultTimeLocale)
 
 import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types (Null)
@@ -127,7 +129,7 @@ instance ToField LT.Text where
     {-# INLINE toField #-}
 
 instance ToField UTCTime where
-    toField = SQLText . T.pack . show
+    toField = SQLText . T.pack . formatTime defaultTimeLocale "%F %X%Q"
     {-# INLINE toField #-}
 
 instance ToField Day where

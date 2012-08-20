@@ -39,8 +39,11 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
 import           Data.Time (UTCTime, Day)
+import           Data.Time.Format (parseTime)
 import qualified Data.Text as T
 import           Data.Typeable (Typeable, typeOf)
+
+import           System.Locale (defaultTimeLocale)
 
 import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types
@@ -138,7 +141,11 @@ instance FromField ByteString where
   fromField f                       = returnError ConversionFailed f "expecting SQLBlob column type"
 
 instance FromField UTCTime where
-  fromField (Field (SQLText t) _) = Ok . read . T.unpack $ t
+  fromField f@(Field (SQLText t) _) =
+    case parseTime defaultTimeLocale "%F %X%Q" . T.unpack $ t of
+      Just t -> Ok t
+      Nothing -> returnError ConversionFailed f "couldn't parse UTCTime field"
+
   fromField f                     = returnError ConversionFailed f "expecting SQLText column type"
 
 instance FromField Day where

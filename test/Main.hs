@@ -17,6 +17,8 @@ tests =
     [ TestLabel "Simple"    . testSimpleSelect
     , TestLabel "Simple"    . testSimpleOnePlusOne
     , TestLabel "Simple"    . testSimpleParams
+    , TestLabel "Simple"    . testSimpleTime
+    , TestLabel "Simple"    . testSimpleTimeFract
     , TestLabel "ParamConv" . testParamConvInt
     , TestLabel "ParamConv" . testParamConvFloat
     , TestLabel "ParamConv" . testParamConvDateTime
