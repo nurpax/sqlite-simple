@@ -1,5 +1,5 @@
 Name:                sqlite-simple
-Version:             0.1.0.1
+Version:             0.1.0.2
 Synopsis:            Mid-Level SQLite client library
 Description:
     Mid-level SQLite client library, based on postgresql-simple.
@@ -39,7 +39,7 @@ Library
     base < 5,
     bytestring >= 0.9,
     containers,
-    direct-sqlite >= 2.0,
+    direct-sqlite >= 2.0 && < 2.1,
     text >= 0.11.1,
     time,
     transformers
@@ -70,6 +70,7 @@ test-suite test
     Errors
     ParamConv
     Utf8Strings
+    TestImports
 
   ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
 
@@ -84,6 +85,7 @@ test-suite test
                , bytestring
                , HUnit
                , sqlite-simple
+               , direct-sqlite
                , text
                , time
 

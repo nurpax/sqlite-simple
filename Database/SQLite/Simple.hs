@@ -39,9 +39,15 @@ module Database.SQLite.Simple (
 
     -- ** Type conversions
     -- $types
+    Query(..)
+  , Connection
+  , ToRow(..)
+  , FromRow(..)
+  , Only(..)
+  , (:.)(..)
 
     -- * Connections
-    open
+  , open
   , close
     -- * Queries that return results
   , query
@@ -50,12 +56,6 @@ module Database.SQLite.Simple (
   , execute
   , execute_
   , field
-  , Query
-  , Connection
-  , ToRow
-  , FromRow
-  , Only(..)
-  , (:.)(..)
     -- ** Exceptions
   , FormatError(fmtMessage, fmtQuery, fmtParams)
   , ResultError(errSQLType, errHaskellType, errMessage)

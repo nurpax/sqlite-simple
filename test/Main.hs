@@ -10,6 +10,8 @@ import ParamConv
 import Errors
 import Utf8Strings
 
+import TestImports()
+
 tests :: [TestEnv -> Test]
 tests =
     [ TestLabel "Simple"    . testSimpleSelect
