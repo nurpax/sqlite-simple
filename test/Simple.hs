@@ -5,7 +5,8 @@ module Simple (
   , testSimpleSelect
   , testSimpleParams
   , testSimpleTime
-  , testSimpleTimeFract) where
+  , testSimpleTimeFract
+  , testSimpleTimeRounding) where
 
 import qualified Data.Text as T
 import Data.Time (UTCTime)
@@ -87,3 +88,20 @@ testSimpleTimeFract TestEnv{..} = TestCase $ do
   rows <- query conn "SELECT * FROM timefract WHERE t = ?" (Only time) :: IO [Only UTCTime]
   assertEqual "should see one row result" 1 (length rows)
   assertEqual "UTCTime" time t
+
+-- Regression test for a buggy case in which a value is saved from
+-- another language (say Python) into a db.  The problem is that a
+-- timestamp with fractional seconds part of .401420 gets converted to
+-- .40142 in Haskell.  SQLite will compare ".40142" to ".404120" as
+-- strings and the two timestamps thus don't match when in fact
+-- they're equal.
+testSimpleTimeRounding :: TestEnv -> Test
+testSimpleTimeRounding TestEnv{..} = TestCase $ do
+  -- This test case will pass if we round .401420 to .40142
+  let timestr = "2012-08-24 08:00:02.401420"
+  execute_ conn "CREATE TABLE timernd (t TIMESTAMP)"
+  execute_ conn (Query (T.concat ["INSERT INTO timernd (t) VALUES ('", T.pack timestr, "')"]))
+  [Only t] <- query_ conn "SELECT * FROM timernd" :: IO [Only UTCTime]
+  -- Try to get the value back
+  rows <- query conn "SELECT * FROM timernd WHERE t = ?" (Only t) :: IO [Only UTCTime]
+  assertEqual "should see one row result" 1 (length rows)
