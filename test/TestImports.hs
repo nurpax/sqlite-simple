@@ -8,7 +8,7 @@ import           Database.SQLite.Simple
 
 data Test = Test Int Int Int
 
--- Hook up sqlite-simple to know how to read Nvbugs
+-- Hook up sqlite-simple to know how to read Test rows
 instance FromRow Test where
   fromRow = Test <$> field <*> field <*> field
 
