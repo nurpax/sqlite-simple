@@ -25,7 +25,6 @@ testUserFromField :: TestEnv -> Test
 testUserFromField TestEnv{..} = TestCase $ do
   execute_ conn "CREATE TABLE fromfield (t TEXT)"
   execute conn "INSERT INTO fromfield (t) VALUES (?)" (Only ("test string" :: String))
-  -- Read it back as a string
   [Only r] <- query_ conn "SELECT t FROM fromfield" :: IO [(Only MyType)]
   assertEqual "fromField" (MyType "fromField test string") r
   execute_ conn "DELETE FROM fromfield"
