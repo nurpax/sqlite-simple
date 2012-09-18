@@ -13,12 +13,17 @@ in turn borrows from
 The library has been fairly well unit tested, but I still consider it
 somewhat experimental.
 
-Building
---------
-
-The usual cabal/cabal-dev instructions apply.
-
 [![Build Status](https://secure.travis-ci.org/nurpax/sqlite-simple.png)](http://travis-ci.org/nurpax/sqlite-simple)
+
+Installation
+------------
+
+You can install sqlite-simple from Hackage (see the [package page])(http://hackage.haskell.org/package/sqlite-simple) 
+with:
+
+```
+cabal install sqlite-simple
+```
 
 Examples of use
 ---------------
