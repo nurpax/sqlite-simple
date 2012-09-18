@@ -9,7 +9,7 @@ import Simple
 import ParamConv
 import Errors
 import Utf8Strings
-
+import UserInstances
 import TestImports()
 
 tests :: [TestEnv -> Test]
@@ -26,6 +26,7 @@ tests =
     , TestLabel "Errors"    . testErrorsInvalidParams
     , TestLabel "Utf8"      . testUtf8Simplest
     , TestLabel "Utf8"      . testBlobs
+    , TestLabel "Instances" . testUserFromField
     ]
 
 -- | Action for connecting to the database that will be used for testing.

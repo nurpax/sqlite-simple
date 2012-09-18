@@ -6,18 +6,18 @@ import           Control.Applicative
 import qualified Data.Text as T
 import           Database.SQLite.Simple
 
-data Test = Test Int Int Int
+data TestType = TestType Int Int Int
 
 -- Hook up sqlite-simple to know how to read Test rows
-instance FromRow Test where
-  fromRow = Test <$> field <*> field <*> field
+instance FromRow TestType where
+  fromRow = TestType <$> field <*> field <*> field
 
 foo :: IO ()
 foo = do
   conn <- open ":memory:"
   [Only _v] <- query_ conn "SELECT * FROM test" :: IO [Only Int]
   [_v] <- query_ conn "SELECT * FROM test" :: IO [(Int,Int)]
-  [_v] <- query_ conn "SELECT * FROM test" :: IO [Test]
+  [_v] <- query_ conn "SELECT * FROM test" :: IO [TestType]
   [_v] <- query conn "SELECT ?+?" (3::Int,4::Int):: IO [(Only Int)]
   close conn
 

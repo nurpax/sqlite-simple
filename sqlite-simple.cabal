@@ -72,6 +72,7 @@ test-suite test
     ParamConv
     Utf8Strings
     TestImports
+    UserInstances
 
   ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
 

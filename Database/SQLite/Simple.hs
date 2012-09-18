@@ -45,6 +45,7 @@ module Database.SQLite.Simple (
   , FromRow(..)
   , Only(..)
   , (:.)(..)
+  , Base.SQLData(..)
 
     -- * Connections
   , open

@@ -31,6 +31,8 @@ module Database.SQLite.Simple.FromField
     , FieldParser
     , ResultError(..)
     , Field
+    , fieldData
+    , returnError
     ) where
 
 import           Control.Applicative (Applicative, (<$>), pure)
@@ -154,6 +156,12 @@ instance FromField Day where
 
 fieldTypename :: Field -> String
 fieldTypename = B.unpack . gettypename . result
+
+-- | Return the actual SQL data for a database field.  This allows
+-- user-defined 'FromField' instances to access the SQL data
+-- associated with a field being parsed.
+fieldData :: Field -> SQLData
+fieldData = result
 
 -- | Given one of the constructors from 'ResultError',  the field,
 --   and an 'errMessage',  this fills in the other fields in the
