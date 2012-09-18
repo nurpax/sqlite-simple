@@ -18,7 +18,7 @@ somewhat experimental.
 Installation
 ------------
 
-You can install sqlite-simple from Hackage (see the [package page])(http://hackage.haskell.org/package/sqlite-simple) 
+You can install sqlite-simple from Hackage (see the [package page](http://hackage.haskell.org/package/sqlite-simple))
 with:
 
 ```
