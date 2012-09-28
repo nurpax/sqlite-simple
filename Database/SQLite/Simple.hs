@@ -68,12 +68,10 @@ import           Control.Exception
 import           Control.Monad (void, when)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
-import           Data.ByteString (ByteString)
 import qualified Data.Text as T
 import           Data.Typeable (Typeable)
 import           Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
-import qualified Data.ByteString.Char8 as B
 
 
 import           Database.SQLite.Simple.FromField (ResultError(..))
@@ -88,7 +86,7 @@ import           Database.SQLite.Simple.FromRow
 data FormatError = FormatError {
       fmtMessage :: String
     , fmtQuery :: Query
-    , fmtParams :: [ByteString]
+    , fmtParams :: [String]
     } deriving (Eq, Show, Typeable)
 
 instance Exception FormatError
@@ -103,7 +101,7 @@ instance Exception FormatError
 -- connection.  This database will vanish when you close the
 -- connection.
 open :: String -> IO Connection
-open fname = Connection <$> Base.open fname
+open fname = Connection <$> Base.open (T.pack fname)
 
 -- | Close a database connection.
 close :: Connection -> IO ()
@@ -112,7 +110,7 @@ close (Connection c) = Base.close c
 withBind :: Query -> Base.Statement -> [Base.SQLData] -> IO r -> IO r
 withBind templ stmt qp action = do
   stmtParamCount <- Base.bindParameterCount stmt
-  when (length qp /= stmtParamCount) (throwColumnMismatch qp stmtParamCount)
+  when (length qp /= fromIntegral stmtParamCount) (throwColumnMismatch qp stmtParamCount)
   mapM_ errorCheckParamName [1..stmtParamCount]
   Base.bind stmt qp
   action
@@ -124,7 +122,7 @@ withBind templ stmt qp action = do
       name <- Base.bindParameterName stmt paramNdx
       case name of
         Just n ->
-          fmtError ("Only unnamed '?' query parameters are accepted, '"++n++"' given")
+          fmtError ("Only unnamed '?' query parameters are accepted, '"++T.unpack n++"' given")
                     templ qp
         Nothing -> return ()
 
@@ -134,7 +132,7 @@ withBind templ stmt qp action = do
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute (Connection c) template@(Query t) qs = do
-  bracket (Base.prepare c (T.unpack t)) Base.finalize go
+  bracket (Base.prepare c t) Base.finalize go
   where
     go stmt = withBind template stmt (toRow qs) (void $ Base.step stmt)
 
@@ -153,7 +151,7 @@ execute (Connection c) template@(Query t) qs = do
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query (Connection conn) templ@(Query t) qs = do
-  bracket (Base.prepare conn (T.unpack t)) Base.finalize go
+  bracket (Base.prepare conn t) Base.finalize go
   where
     go stmt = withBind templ stmt (toRow qs) (stepStmt stmt >>= finishQuery)
 
@@ -166,7 +164,7 @@ query_ conn (Query que) = do
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
 execute_ (Connection conn) (Query que) =
-  bracket (Base.prepare conn (T.unpack que)) Base.finalize go
+  bracket (Base.prepare conn que) Base.finalize go
     where
       go stmt = void $ Base.step stmt
 
@@ -196,7 +194,7 @@ fmtError :: String -> Query -> [Base.SQLData] -> a
 fmtError msg q xs = throw FormatError {
                       fmtMessage = msg
                     , fmtQuery = q
-                    , fmtParams = map (B.pack . show) xs
+                    , fmtParams = map show xs
                     }
 
 -- $use

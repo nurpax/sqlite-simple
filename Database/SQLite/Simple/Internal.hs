@@ -63,7 +63,7 @@ gettypename Base.SQLNull = "NULL"
 
 exec :: Connection -> T.Text -> IO Result
 exec (Connection conn) q =
-  bracket (Base.prepare conn (T.unpack q)) Base.finalize stepStmt
+  bracket (Base.prepare conn q) Base.finalize stepStmt
 
 -- Run a query a prepared statement
 stepStmt :: Base.Statement -> IO Result

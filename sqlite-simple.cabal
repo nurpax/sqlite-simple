@@ -39,7 +39,7 @@ Library
     base < 5,
     bytestring >= 0.9,
     containers,
-    direct-sqlite >= 2.0 && < 2.1,
+    direct-sqlite >= 2.2 && < 2.3,
     text >= 0.11.1,
     time,
     old-locale >= 1.0.0.0,
