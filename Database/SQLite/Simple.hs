@@ -1,4 +1,3 @@
-{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -131,7 +130,7 @@ withBind templ stmt qp action = do
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
-execute (Connection c) template@(Query t) qs = do
+execute (Connection c) template@(Query t) qs =
   bracket (Base.prepare c t) Base.finalize go
   where
     go stmt = withBind template stmt (toRow qs) (void $ Base.step stmt)
@@ -150,7 +149,7 @@ execute (Connection c) template@(Query t) qs = do
 -- * 'ResultError': result conversion failed.
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
-query (Connection conn) templ@(Query t) qs = do
+query (Connection conn) templ@(Query t) qs =
   bracket (Base.prepare conn t) Base.finalize go
   where
     go stmt = withBind templ stmt (toRow qs) (stepStmt stmt >>= finishQuery)

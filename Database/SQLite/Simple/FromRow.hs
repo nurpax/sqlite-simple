@@ -68,7 +68,7 @@ fieldWith fieldP = RP $ do
     column <- lift get
     lift (put (column + 1))
     let ncols = length rowresult
-    if (column >= ncols)
+    if column >= ncols
     then do
       let vals = map (\c -> (gettypename (rowresult !! c)
                            , ellipsis (rowresult !! c)))

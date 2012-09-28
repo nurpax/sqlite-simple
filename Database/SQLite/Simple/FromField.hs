@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
-{-# LANGUAGE PatternGuards, ScopedTypeVariables      #-}
+{-# LANGUAGE ScopedTypeVariables      #-}
 
 ------------------------------------------------------------------------------
 -- |
