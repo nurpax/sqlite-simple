@@ -25,6 +25,8 @@ with:
 cabal install sqlite-simple
 ```
 
+A Windows user?  It works but please see [this note](https://gist.github.com/3907344) on direct-sqlite Windows installation.
+
 Examples of use
 ---------------
 
