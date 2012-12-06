@@ -23,6 +23,7 @@ module Database.SQLite.Simple.Internal where
 import           Prelude hiding (catch)
 
 import           Control.Applicative
+import           Control.Monad.Fix (fix)
 import           Control.Exception
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8()
@@ -65,16 +66,15 @@ exec :: Connection -> T.Text -> IO Result
 exec (Connection conn) q =
   bracket (Base.prepare conn q) Base.finalize stepStmt
 
--- Run a query a prepared statement
+
+-- Run a query on a prepared statement
 stepStmt :: Base.Statement -> IO Result
-stepStmt = go
-  where
-    go stmt = do
-      res <- Base.step stmt
-      case res of
-        Base.Row -> do
-          cols <- Base.columns stmt
-          next <- go stmt
-          return $ cols : next
-        Base.Done ->
-          return []
+stepStmt stmt =
+  flip fix [] $ \loop acc -> do
+    res <- Base.step stmt
+    case res of
+      Base.Done ->
+        return (reverse acc)
+      Base.Row -> do
+        !cols <- Base.columns stmt
+        loop (cols : acc)
