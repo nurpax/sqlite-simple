@@ -10,8 +10,9 @@ The API has been modeled directly after
 in turn borrows from
 [mysql-simple](https://github.com/bos/mysql-simple).
 
-The library has been fairly well unit tested, but I still consider it
-somewhat experimental.
+The library has been fairly well unit tested.  It's also been benchmark'd using
+[db-bench](https://github.com/nurpax/db-bench) which is a performance comparison suite 
+that measures database binding library overhead for various Haskell bindings.
 
 [![Build Status](https://secure.travis-ci.org/nurpax/sqlite-simple.png)](http://travis-ci.org/nurpax/sqlite-simple)
 
