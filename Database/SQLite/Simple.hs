@@ -125,15 +125,17 @@ withBind templ stmt qp action = do
                     templ qp
         Nothing -> return ()
 
+withStatement :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
+withStatement (Connection c) (Query t) go  = bracket (Base.prepare c t) Base.finalize go
+
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
-execute (Connection c) template@(Query t) qs =
-  bracket (Base.prepare c t) Base.finalize go
-  where
-    go stmt = withBind template stmt (toRow qs) (void $ Base.step stmt)
+execute conn template qs =
+  withStatement conn template $ \stmt ->
+    withBind template stmt (toRow qs) (void $ Base.step stmt)
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. All results are retrieved and converted before this
@@ -149,10 +151,9 @@ execute (Connection c) template@(Query t) qs =
 -- * 'ResultError': result conversion failed.
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
-query (Connection conn) templ@(Query t) qs =
-  bracket (Base.prepare conn t) Base.finalize go
-  where
-    go stmt = withBind templ stmt (toRow qs) (stepStmt stmt >>= finishQuery)
+query conn templ qs =
+  withStatement conn templ $ \stmt ->
+    withBind templ stmt (toRow qs) (stepStmt stmt >>= finishQuery)
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
@@ -162,10 +163,9 @@ query_ conn (Query que) = do
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
-execute_ (Connection conn) (Query que) =
-  bracket (Base.prepare conn que) Base.finalize go
-    where
-      go stmt = void $ Base.step stmt
+execute_ conn template =
+  withStatement conn template $ \stmt ->
+    void $ Base.step stmt
 
 
 finishQuery :: (FromRow r) => Result -> IO [r]
