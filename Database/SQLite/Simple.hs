@@ -49,6 +49,7 @@ module Database.SQLite.Simple (
     -- * Connections
   , open
   , close
+  , withConnection
     -- * Queries that return results
   , query
   , query_
@@ -105,6 +106,11 @@ open fname = Connection <$> Base.open (T.pack fname)
 -- | Close a database connection.
 close :: Connection -> IO ()
 close (Connection c) = Base.close c
+
+-- | Opens a database connection, executes an action using this connection, and
+-- closes the connection, even in the presence of exceptions.
+withConnection :: String -> (Connection -> IO a) -> IO a
+withConnection connString f = bracket (open connString) close f
 
 withBind :: Query -> Base.Statement -> [Base.SQLData] -> IO r -> IO r
 withBind templ stmt qp action = do
