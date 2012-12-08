@@ -110,7 +110,7 @@ close (Connection c) = Base.close c
 -- | Opens a database connection, executes an action using this connection, and
 -- closes the connection, even in the presence of exceptions.
 withConnection :: String -> (Connection -> IO a) -> IO a
-withConnection connString f = bracket (open connString) close f
+withConnection connString = bracket (open connString) close
 
 withBind :: Query -> Base.Statement -> [Base.SQLData] -> IO r -> IO r
 withBind templ stmt qp action = do
@@ -132,7 +132,7 @@ withBind templ stmt qp action = do
         Nothing -> return ()
 
 withStatement :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
-withStatement (Connection c) (Query t) go  = bracket (Base.prepare c t) Base.finalize go
+withStatement (Connection c) (Query t) = bracket (Base.prepare c t) Base.finalize
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
