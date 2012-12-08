@@ -84,7 +84,7 @@ list](http://www.haskell.org/mailman/listinfo/database-devel).
 
 ### Contributing
 
-If you send pull requests for new features, it'd be great if you also develop unit 
+If you send pull requests for new features, it'd be great if you could also develop unit 
 tests for any such features.
 
 
