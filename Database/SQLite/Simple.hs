@@ -57,6 +57,8 @@ module Database.SQLite.Simple (
   , execute
   , execute_
   , field
+  , fold
+  , fold_
     -- ** Exceptions
   , FormatError(fmtMessage, fmtQuery, fmtParams)
   , ResultError(errSQLType, errHaskellType, errMessage)
@@ -173,27 +175,75 @@ execute_ conn template =
   withStatement conn template $ \stmt ->
     void $ Base.step stmt
 
+-- | Perform a @SELECT@ or other SQL query that is expected to return results.
+-- Results are converted and fed into the 'action' callback as they are being
+-- retrieved from the database.
+--
+-- This allows gives the possibility of processing results in constant space
+-- (for instance writing them to disk).
+--
+-- Exceptions that may be thrown:
+--
+-- * 'FormatError': the query string mismatched with given arguments.
+--
+-- * 'ResultError': result conversion failed.
+fold :: ( FromRow row, ToRow params )
+        => Connection
+        -> Query
+        -> params
+        -> a
+        -> (a -> row -> IO a)
+        -> IO a
+fold conn query params initalState action =
+  withStatement conn query $ \stmt ->
+    withBind query stmt (toRow params)
+      (doFold stmt initalState action)
+
+-- | A version of 'fold' which does not perform parameter substitution.
+fold_ :: ( FromRow row )
+        => Connection
+        -> Query
+        -> a
+        -> (a -> row -> IO a)
+        -> IO a
+fold_ conn query initalState action =
+  withStatement conn query $ \stmt ->
+    doFold stmt initalState action
+
+doFold :: (FromRow row) => Base.Statement ->  a -> (a -> row -> IO a) -> IO a
+doFold stmt initState action = loop 0 initState
+    where
+        loop i val = do
+            statRes <- Base.step stmt
+            case statRes of
+                Base.Row    -> do
+                  rowRes <- Base.columns stmt
+                  res <- convertRow rowRes i (length rowRes)
+                  val' <- action val res
+                  loop (i+1) val'
+                Base.Done   -> return val
 
 finishQuery :: (FromRow r) => Result -> IO [r]
-finishQuery rows =
-  mapM doRow $ zip rows [0..]
-    where
-      doRow (rowRes, rowNdx) = do
-        let rw = Row rowNdx rowRes
-        case runStateT (runReaderT (unRP fromRow) rw) 0 of
-          Ok (val,col) | col == ncols -> return val
-                       | otherwise -> do
-                           let vals = map (\f -> (gettypename f, f)) rowRes
-                           throw (ConversionFailed
-                             (show ncols ++ " values: " ++ show vals)
-                             (show col ++ " slots in target type")
-                             "mismatch between number of columns to \
-                             \convert and number in target type")
-          Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
-          Errors [x] -> throwIO x
-          Errors xs  -> throwIO $ ManyErrors xs
+finishQuery rows = mapM doRow $ zip rows [0..]
+  where
+    ncols = length . head $ rows
+    doRow (rowRes, rowNdx) = convertRow rowRes rowNdx ncols
 
-      ncols = length . head $ rows
+convertRow :: (FromRow r) => [Base.SQLData] -> Int -> Int -> IO r
+convertRow rowRes rowNdx ncols = do
+  let rw = Row rowNdx rowRes
+  case runStateT (runReaderT (unRP fromRow) rw) 0 of
+    Ok (val,col) | col == ncols -> return val
+                 | otherwise -> do
+                     let vals = map (\f -> (gettypename f, f)) rowRes
+                     throw (ConversionFailed
+                       (show ncols ++ " values: " ++ show vals)
+                       (show col ++ " slots in target type")
+                       "mismatch between number of columns to \
+                       \convert and number in target type")
+    Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
+    Errors [x] -> throwIO x
+    Errors xs  -> throwIO $ ManyErrors xs
 
 fmtError :: String -> Query -> [Base.SQLData] -> a
 fmtError msg q xs = throw FormatError {
