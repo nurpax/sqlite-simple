@@ -12,6 +12,8 @@ testFolds TestEnv{..} = TestCase $ do
   execute_ conn "INSERT INTO testf (t) VALUES (5)"
   execute_ conn "INSERT INTO testf (t) VALUES (6)"
   val <- fold_ conn "SELECT id,t FROM testf" ([],[]) sumValues
-  assertEqual "fold1" ([3,2,1], [6,5,4]) val
+  assertEqual "fold_" ([3,2,1], [6,5,4]) val
+  val <- fold conn "SELECT id,t FROM testf WHERE id > ?" (Only (1 :: Int)) ([],[]) sumValues
+  assertEqual "fold" ([3,2], [6,5]) val
   where
     sumValues (accId, accT) (id_ :: Int, t :: Int) = return $ (id_ : accId, t : accT)
