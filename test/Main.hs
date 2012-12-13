@@ -11,6 +11,7 @@ import Errors
 import Utf8Strings
 import UserInstances
 import TestImports()
+import Fold
 
 tests :: [TestEnv -> Test]
 tests =
@@ -27,6 +28,7 @@ tests =
     , TestLabel "Utf8"      . testUtf8Simplest
     , TestLabel "Utf8"      . testBlobs
     , TestLabel "Instances" . testUserFromField
+    , TestLabel "Fold"      . testFolds
     ]
 
 -- | Action for connecting to the database that will be used for testing.
