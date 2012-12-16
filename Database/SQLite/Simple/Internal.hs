@@ -23,14 +23,10 @@ module Database.SQLite.Simple.Internal where
 import           Prelude hiding (catch)
 
 import           Control.Applicative
-import           Control.Monad.Fix (fix)
-import           Control.Exception
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8()
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
-
-import qualified Data.Text          as T
 
 import           Database.SQLite.Simple.Ok
 import qualified Database.SQLite3 as Base
@@ -62,19 +58,3 @@ gettypename (Base.SQLText _) = "TEXT"
 gettypename (Base.SQLBlob _) = "BLOB"
 gettypename Base.SQLNull = "NULL"
 
-exec :: Connection -> T.Text -> IO Result
-exec (Connection conn) q =
-  bracket (Base.prepare conn q) Base.finalize stepStmt
-
-
--- Run a query on a prepared statement
-stepStmt :: Base.Statement -> IO Result
-stepStmt stmt =
-  flip fix [] $ \loop acc -> do
-    res <- Base.step stmt
-    case res of
-      Base.Done ->
-        return (reverse acc)
-      Base.Row -> do
-        !cols <- Base.columns stmt
-        loop (cols : acc)
