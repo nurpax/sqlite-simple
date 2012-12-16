@@ -49,8 +49,6 @@ data Row = Row {
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad )
 
-type Result = [[Base.SQLData]]
-
 gettypename :: Base.SQLData -> ByteString
 gettypename (Base.SQLInteger _) = "INTEGER"
 gettypename (Base.SQLFloat _) = "FLOAT"
