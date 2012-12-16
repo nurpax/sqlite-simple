@@ -211,16 +211,18 @@ fold_ conn query initalState action =
     doFold stmt initalState action
 
 doFold :: (FromRow row) => Base.Statement ->  a -> (a -> row -> IO a) -> IO a
-doFold stmt initState action = loop 0 initState
+doFold stmt initState action = do
+  nCols <- Base.columnCount stmt
+  loop (fromIntegral nCols) 0 initState
   where
-    loop i val = do
+    loop nCols i val = do
       statRes <- Base.step stmt
       case statRes of
         Base.Row    -> do
           rowRes <- Base.columns stmt
-          res <- convertRow rowRes i (length rowRes)
+          res <- convertRow rowRes i nCols
           val' <- action val res
-          loop (i+1) val'
+          loop nCols (i+1) val'
         Base.Done   -> return val
 
 convertRow :: (FromRow r) => [Base.SQLData] -> Int -> Int -> IO r
