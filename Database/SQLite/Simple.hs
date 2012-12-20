@@ -144,6 +144,11 @@ execute conn template qs =
   withStatement conn template $ \stmt ->
     withBind template stmt (toRow qs) (void $ Base.step stmt)
 
+
+doFoldToList :: (FromRow row) => Base.Statement -> IO [row]
+doFoldToList stmt =
+  fmap reverse $ doFold stmt [] (\acc e -> return (e : acc))
+
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. All results are retrieved and converted before this
 -- function returns.
@@ -160,14 +165,12 @@ query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn templ qs =
   withStatement conn templ $ \stmt ->
-    withBind templ stmt (toRow qs)
-      (doFold stmt [] (\acc e -> return (e : acc)) >>= return . reverse)
+    withBind templ stmt (toRow qs) (doFoldToList stmt)
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
-query_ conn query = do
-  withStatement conn query $ \stmt ->
-    (doFold stmt [] (\acc e -> return (e : acc)) >>= return . reverse)
+query_ conn query =
+  withStatement conn query doFoldToList
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
