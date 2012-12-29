@@ -2,6 +2,7 @@
 module ParamConv (
     testParamConvInt
   , testParamConvFloat
+  , testParamConvBools
   , testParamConvDateTime) where
 
 import Data.Int
@@ -60,3 +61,21 @@ testParamConvDateTime TestEnv{..} = TestCase $ do
   assertEqual "day" (read "2012-08-12" :: Day) t1
   assertEqual "day" (read "2012-08-12 01:01:01" :: UTCTime) t2
 
+
+testParamConvBools :: TestEnv -> Test
+testParamConvBools TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE bt (id INTEGER PRIMARY KEY, b BOOLEAN)"
+  -- Booleans are ints with values 0 or 1 on SQLite
+  execute_ conn "INSERT INTO bt (b) VALUES (0)"
+  execute_ conn "INSERT INTO bt (b) VALUES (1)"
+  [Only r1, Only r2] <- query_ conn "SELECT b from bt" :: IO [Only Bool]
+  assertEqual "bool" False r1
+  assertEqual "bool" True r2
+  execute conn "INSERT INTO bt (b) VALUES (?)" (Only True)
+  execute conn "INSERT INTO bt (b) VALUES (?)" (Only False)
+  execute conn "INSERT INTO bt (b) VALUES (?)" (Only False)
+  [Only r3, Only r4, Only r5] <-
+    query_ conn "SELECT b from bt where id in (3, 4, 5) ORDER BY id" :: IO [Only Bool]
+  assertEqual "bool" True r3
+  assertEqual "bool" False r4
+  assertEqual "bool" False r5

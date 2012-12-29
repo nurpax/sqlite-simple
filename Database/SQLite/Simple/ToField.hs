@@ -52,8 +52,8 @@ instance ToField Null where
     {-# INLINE toField #-}
 
 instance ToField Bool where
-    toField True  = SQLText "true"
-    toField False = SQLText "false"
+    toField False = SQLInteger 0
+    toField True  = SQLInteger 1
     {-# INLINE toField #-}
 
 instance ToField Int8 where

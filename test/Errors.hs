@@ -42,6 +42,13 @@ testErrorsColumns TestEnv{..} = TestCase $ do
   assertResultErrorCaught
     (do [Only _t1] <- query conn "SELECT b FROM cols_blobs WHERE id = ?" (Only (1 :: Int)) :: IO [Only String]
         return ())
+  execute_ conn "CREATE TABLE cols_bools (id INTEGER PRIMARY KEY, b BOOLEAN)"
+  -- 3 = invalid value for bool, must be 0 or 1
+  execute_ conn "INSERT INTO cols_bools (b) VALUES (3)"
+  assertResultErrorCaught
+    (do [Only _t1] <- query_ conn "SELECT b FROM cols_bools" :: IO [Only Bool]
+        return ())
+
 
 testErrorsInvalidParams :: TestEnv -> Test
 testErrorsInvalidParams TestEnv{..} = TestCase $ do

@@ -23,6 +23,7 @@ tests =
     , TestLabel "ParamConv" . testParamConvInt
     , TestLabel "ParamConv" . testParamConvFloat
     , TestLabel "ParamConv" . testParamConvDateTime
+    , TestLabel "ParamConv" . testParamConvBools
     , TestLabel "Errors"    . testErrorsColumns
     , TestLabel "Errors"    . testErrorsInvalidParams
     , TestLabel "Utf8"      . testUtf8Simplest
