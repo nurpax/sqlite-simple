@@ -150,7 +150,7 @@ withStatement conn template params action =
 
 -- | A version of 'withStatement' which does not perform query substitution.
 withStatement_ :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
-withStatement_ (Connection c) (Query t) = bracket (Base.prepare c t) Base.finalize
+withStatement_ conn query = bracket (openStmt_ conn query) closeStmt
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
