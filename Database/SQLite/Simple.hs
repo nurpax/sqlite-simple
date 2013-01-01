@@ -132,6 +132,11 @@ bind templ stmt qp = do
                     templ qp
         Nothing -> return ()
 
+withStatement :: (ToRow params) => Connection -> Query -> params -> (Base.Statement -> IO r) -> IO r
+withStatement conn template params action =
+  withStatement_ conn template $ \stmt ->
+    bind template stmt (toRow params) >>= action
+
 withStatement_ :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
 withStatement_ (Connection c) (Query t) = bracket (Base.prepare c t) Base.finalize
 
