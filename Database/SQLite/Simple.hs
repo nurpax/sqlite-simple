@@ -135,6 +135,11 @@ bind templ stmt qp = do
                     templ qp
         Nothing -> return ()
 
+openStmt :: (ToRow params) => Connection -> Query -> params -> IO Base.Statement
+openStmt conn query params = do
+  stmt <- openStmt_ conn query
+  bind query stmt (toRow params)
+
 openStmt_ :: Connection -> Query -> IO Base.Statement
 openStmt_ (Connection c) (Query t) = Base.prepare c t
 
