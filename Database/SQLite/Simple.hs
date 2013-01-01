@@ -135,6 +135,12 @@ bind templ stmt qp = do
                     templ qp
         Nothing -> return ()
 
+openStmt_ :: Connection -> Query -> IO Base.Statement
+openStmt_ (Connection c) (Query t) = Base.prepare c t
+
+closeStmt :: Base.Statement -> IO ()
+closeStmt stmt = Base.finalize stmt
+
 -- | Opens a prepared statement, executes an action using this statement, and
 -- closes the statement, even in the presence of exceptions.
 withStatement :: (ToRow params) => Connection -> Query -> params -> (Base.Statement -> IO r) -> IO r
