@@ -149,9 +149,7 @@ closeStmt stmt = Base.finalize stmt
 -- | Opens a prepared statement, executes an action using this statement, and
 -- closes the statement, even in the presence of exceptions.
 withStatement :: (ToRow params) => Connection -> Query -> params -> (Base.Statement -> IO r) -> IO r
-withStatement conn template params action =
-  withStatement_ conn template $ \stmt ->
-    bind template stmt (toRow params) >>= action
+withStatement conn template params = bracket (openStmt conn template params) closeStmt
 
 -- | A version of 'withStatement' which does not perform query substitution.
 withStatement_ :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
