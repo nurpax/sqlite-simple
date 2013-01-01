@@ -132,8 +132,8 @@ withBind templ stmt qp action = do
                     templ qp
         Nothing -> return ()
 
-withStatement :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
-withStatement (Connection c) (Query t) = bracket (Base.prepare c t) Base.finalize
+withStatement_ :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
+withStatement_ (Connection c) (Query t) = bracket (Base.prepare c t) Base.finalize
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
@@ -141,7 +141,7 @@ withStatement (Connection c) (Query t) = bracket (Base.prepare c t) Base.finaliz
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute conn template qs =
-  withStatement conn template $ \stmt ->
+  withStatement_ conn template $ \stmt ->
     withBind template stmt (toRow qs) (void $ Base.step stmt)
 
 
@@ -164,18 +164,18 @@ doFoldToList stmt =
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn templ qs =
-  withStatement conn templ $ \stmt ->
+  withStatement_ conn templ $ \stmt ->
     withBind templ stmt (toRow qs) (doFoldToList stmt)
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
 query_ conn query =
-  withStatement conn query doFoldToList
+  withStatement_ conn query doFoldToList
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
 execute_ conn template =
-  withStatement conn template $ \stmt ->
+  withStatement_ conn template $ \stmt ->
     void $ Base.step stmt
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return results.
@@ -198,7 +198,7 @@ fold :: ( FromRow row, ToRow params )
         -> (a -> row -> IO a)
         -> IO a
 fold conn query params initalState action =
-  withStatement conn query $ \stmt ->
+  withStatement_ conn query $ \stmt ->
     withBind query stmt (toRow params)
       (doFold stmt initalState action)
 
@@ -210,7 +210,7 @@ fold_ :: ( FromRow row )
         -> (a -> row -> IO a)
         -> IO a
 fold_ conn query initalState action =
-  withStatement conn query $ \stmt ->
+  withStatement_ conn query $ \stmt ->
     doFold stmt initalState action
 
 doFold :: (FromRow row) => Base.Statement ->  a -> (a -> row -> IO a) -> IO a
