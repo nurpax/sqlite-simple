@@ -146,8 +146,8 @@ withStatement_ (Connection c) (Query t) = bracket (Base.prepare c t) Base.finali
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute conn template qs =
-  withStatement_ conn template $ \stmt ->
-    bind template stmt (toRow qs) >>= void . Base.step
+  withStatement conn template qs $ \stmt ->
+    void . Base.step $ stmt
 
 
 doFoldToList :: (FromRow row) => Base.Statement -> IO [row]
@@ -169,8 +169,8 @@ doFoldToList stmt =
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn templ qs =
-  withStatement_ conn templ $ \stmt ->
-    bind templ stmt (toRow qs) >>= doFoldToList
+  withStatement conn templ qs $ \stmt ->
+    doFoldToList stmt
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
@@ -203,9 +203,8 @@ fold :: ( FromRow row, ToRow params )
         -> (a -> row -> IO a)
         -> IO a
 fold conn query params initalState action =
-  withStatement_ conn query $ \stmt -> do
-    bndStmt <- bind query stmt (toRow params)
-    doFold bndStmt initalState action
+  withStatement conn query params $ \stmt ->
+      doFold stmt initalState action
 
 -- | A version of 'fold' which does not perform parameter substitution.
 fold_ :: ( FromRow row )
