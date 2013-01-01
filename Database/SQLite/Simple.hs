@@ -113,13 +113,13 @@ close (Connection c) = Base.close c
 withConnection :: String -> (Connection -> IO a) -> IO a
 withConnection connString = bracket (open connString) close
 
-withBind :: Query -> Base.Statement -> [Base.SQLData] -> IO r -> IO r
-withBind templ stmt qp action = do
+bind :: Query -> Base.Statement -> [Base.SQLData] -> IO Base.Statement
+bind templ stmt qp = do
   stmtParamCount <- Base.bindParameterCount stmt
   when (length qp /= fromIntegral stmtParamCount) (throwColumnMismatch qp stmtParamCount)
   mapM_ errorCheckParamName [1..stmtParamCount]
   Base.bind stmt qp
-  action
+  return stmt
   where
     throwColumnMismatch qp nParams =
       fmtError ("SQL query contains " ++ show nParams ++ " params, but " ++
@@ -142,7 +142,7 @@ withStatement_ (Connection c) (Query t) = bracket (Base.prepare c t) Base.finali
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute conn template qs =
   withStatement_ conn template $ \stmt ->
-    withBind template stmt (toRow qs) (void $ Base.step stmt)
+    bind template stmt (toRow qs) >>= void . Base.step
 
 
 doFoldToList :: (FromRow row) => Base.Statement -> IO [row]
@@ -165,7 +165,7 @@ query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn templ qs =
   withStatement_ conn templ $ \stmt ->
-    withBind templ stmt (toRow qs) (doFoldToList stmt)
+    bind templ stmt (toRow qs) >>= doFoldToList
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
@@ -198,9 +198,9 @@ fold :: ( FromRow row, ToRow params )
         -> (a -> row -> IO a)
         -> IO a
 fold conn query params initalState action =
-  withStatement_ conn query $ \stmt ->
-    withBind query stmt (toRow params)
-      (doFold stmt initalState action)
+  withStatement_ conn query $ \stmt -> do
+    bndStmt <- bind query stmt (toRow params)
+    doFold bndStmt initalState action
 
 -- | A version of 'fold' which does not perform parameter substitution.
 fold_ :: ( FromRow row )
