@@ -55,6 +55,7 @@ module Database.SQLite.Simple (
   , closeStmt
   , withStatement
   , withStatement_
+  , nextRow
     -- * Queries that return results
   , query
   , query_
@@ -240,18 +241,27 @@ fold_ conn query initalState action =
 
 doFold :: (FromRow row) => Base.Statement ->  a -> (a -> row -> IO a) -> IO a
 doFold stmt initState action = do
-  nCols <- Base.columnCount stmt
-  loop (fromIntegral nCols) 0 initState
+  loop 0 initState
   where
-    loop nCols i val = do
-      statRes <- Base.step stmt
-      case statRes of
-        Base.Row    -> do
-          rowRes <- Base.columns stmt
-          res <- convertRow rowRes i nCols
-          val' <- action val res
-          loop nCols (i+1) val'
-        Base.Done   -> return val
+    loop i val = do
+      maybeNextRow <- nextRow stmt i
+      case maybeNextRow of
+        Just row  -> do
+          val' <- action val row
+          loop (i+1) val'
+        Nothing   -> return val
+
+-- | Extracts the next row from the prepared statement.
+nextRow :: (FromRow r) => Base.Statement -> Int -> IO (Maybe r)
+nextRow stmt rowNdx = do
+  statRes <- Base.step stmt
+  case statRes of
+    Base.Row    -> do
+      rowRes <- Base.columns stmt
+      let nCols = length rowRes
+      row <- convertRow rowRes rowNdx nCols
+      return $ Just row
+    Base.Done   -> return Nothing
 
 convertRow :: (FromRow r) => [Base.SQLData] -> Int -> Int -> IO r
 convertRow rowRes rowNdx ncols = do
