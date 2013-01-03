@@ -158,7 +158,9 @@ closeStatement = Base.finalize
 withStatement :: (ToRow params) => Connection -> Query -> params -> (Base.Statement -> IO r) -> IO r
 withStatement conn template params action =
   withStatement_ conn template $ \stmt ->
-    withBind template stmt params action
+    -- Don't use withBind here, there is no need to reset the parameters since
+    -- we're destroying the statement
+    bind template stmt (toRow params) >>= action
 
 -- | A version of 'withStatement' which does not perform query substitution.
 withStatement_ :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
