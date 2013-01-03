@@ -245,31 +245,31 @@ fold_ conn query initalState action =
 
 doFold :: (FromRow row) => Base.Statement ->  a -> (a -> row -> IO a) -> IO a
 doFold stmt initState action = do
-  loop 0 initState
+  loop initState
   where
-    loop i val = do
-      maybeNextRow <- nextRow stmt i
+    loop val = do
+      maybeNextRow <- nextRow stmt
       case maybeNextRow of
         Just row  -> do
           val' <- action val row
-          loop (i+1) val'
+          loop val'
         Nothing   -> return val
 
 -- | Extracts the next row from the prepared statement.
-nextRow :: (FromRow r) => Base.Statement -> Int -> IO (Maybe r)
-nextRow stmt rowNdx = do
+nextRow :: (FromRow r) => Base.Statement -> IO (Maybe r)
+nextRow stmt = do
   statRes <- Base.step stmt
   case statRes of
     Base.Row    -> do
       rowRes <- Base.columns stmt
       let nCols = length rowRes
-      row <- convertRow rowRes rowNdx nCols
+      row <- convertRow rowRes nCols
       return $ Just row
     Base.Done   -> return Nothing
 
-convertRow :: (FromRow r) => [Base.SQLData] -> Int -> Int -> IO r
-convertRow rowRes rowNdx ncols = do
-  let rw = Row rowNdx rowRes
+convertRow :: (FromRow r) => [Base.SQLData] -> Int -> IO r
+convertRow rowRes ncols = do
+  let rw = Row rowRes
   case runStateT (runReaderT (unRP fromRow) rw) 0 of
     Ok (val,col) | col == ncols -> return val
                  | otherwise -> do
