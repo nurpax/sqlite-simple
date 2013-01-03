@@ -51,10 +51,10 @@ module Database.SQLite.Simple (
   , withConnection
     -- * Statements
   , openStmt
-  , openStmt_
   , closeStmt
   , withStatement
   , withStatement_
+  , withBind
   , nextRow
     -- * Queries that return results
   , query
@@ -139,15 +139,15 @@ bind templ stmt qp = do
                     templ qp
         Nothing -> return ()
 
--- | Opens a prepared statement and binds its parameters.
-openStmt :: (ToRow params) => Connection -> Query -> params -> IO Base.Statement
-openStmt conn query params = do
-  stmt <- openStmt_ conn query
-  bind query stmt (toRow params)
+-- | Binds parameters to a prepared statement and then resets them, even in the
+-- presence of exceptions.
+withBind :: (ToRow params) => Query -> Base.Statement -> params -> (Base.Statement -> IO r) -> IO r
+withBind query stmt params = bracket (bind query stmt (toRow params)) Base.reset
 
--- | A version of 'openStmt' which does not perform parameter substitution.
-openStmt_ :: Connection -> Query -> IO Base.Statement
-openStmt_ (Connection c) (Query t) = Base.prepare c t
+-- | Opens a prepared statement. A prepared statement must always be closed with
+-- a corresponding call to 'closeStmt' before closing the connection.
+openStmt :: Connection -> Query -> IO Base.Statement
+openStmt (Connection c) (Query t) = Base.prepare c t
 
 -- | Closes a prepared statement.
 closeStmt :: Base.Statement -> IO ()
@@ -156,11 +156,13 @@ closeStmt stmt = Base.finalize stmt
 -- | Opens a prepared statement, executes an action using this statement, and
 -- closes the statement, even in the presence of exceptions.
 withStatement :: (ToRow params) => Connection -> Query -> params -> (Base.Statement -> IO r) -> IO r
-withStatement conn template params = bracket (openStmt conn template params) closeStmt
+withStatement conn template params action =
+  withStatement_ conn template $ \stmt ->
+    withBind template stmt params action
 
 -- | A version of 'withStatement' which does not perform query substitution.
 withStatement_ :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
-withStatement_ conn query = bracket (openStmt_ conn query) closeStmt
+withStatement_ conn query = bracket (openStmt conn query) closeStmt
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
