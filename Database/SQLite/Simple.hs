@@ -50,8 +50,8 @@ module Database.SQLite.Simple (
   , close
   , withConnection
     -- * Statements
-  , openStmt
-  , closeStmt
+  , openStatement
+  , closeStatement
   , withStatement
   , withStatement_
   , withBind
@@ -146,12 +146,12 @@ withBind query stmt params = bracket (bind query stmt (toRow params)) Base.reset
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
 -- a corresponding call to 'closeStmt' before closing the connection.
-openStmt :: Connection -> Query -> IO Base.Statement
-openStmt (Connection c) (Query t) = Base.prepare c t
+openStatement :: Connection -> Query -> IO Base.Statement
+openStatement (Connection c) (Query t) = Base.prepare c t
 
 -- | Closes a prepared statement.
-closeStmt :: Base.Statement -> IO ()
-closeStmt stmt = Base.finalize stmt
+closeStatement :: Base.Statement -> IO ()
+closeStatement = Base.finalize
 
 -- | Opens a prepared statement, executes an action using this statement, and
 -- closes the statement, even in the presence of exceptions.
@@ -162,7 +162,7 @@ withStatement conn template params action =
 
 -- | A version of 'withStatement' which does not perform query substitution.
 withStatement_ :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
-withStatement_ conn query = bracket (openStmt conn query) closeStmt
+withStatement_ conn query = bracket (openStatement conn query) closeStatement
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
