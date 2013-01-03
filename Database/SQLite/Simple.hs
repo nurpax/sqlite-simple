@@ -244,7 +244,7 @@ fold_ conn query initalState action =
     doFold stmt initalState action
 
 doFold :: (FromRow row) => Base.Statement ->  a -> (a -> row -> IO a) -> IO a
-doFold stmt initState action = do
+doFold stmt initState action =
   loop initState
   where
     loop val = do
