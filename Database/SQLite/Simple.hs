@@ -149,6 +149,11 @@ bind stmt qp = do
                     templ qp
         Nothing -> return ()
 
+-- | Resets a statement. This does not reset bound parameters, if any, but
+-- allows the statement to be reexecuted again by invoking 'nextRow'.
+reset :: Base.Statement -> IO ()
+reset = Base.reset
+
 -- | Binds parameters to a prepared statement and then resets them, even in the
 -- presence of exceptions.
 withBind :: (ToRow params) => Base.Statement -> params -> (Base.Statement -> IO r) -> IO r
