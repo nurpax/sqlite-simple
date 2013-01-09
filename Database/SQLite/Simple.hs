@@ -165,7 +165,7 @@ withBind :: (ToRow params) => Base.Statement -> params -> (Base.Statement -> IO 
 withBind stmt params = bracket (bind stmt (toRow params) >> return stmt) Base.reset
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
--- a corresponding call to 'closeStmt' before closing the connection. Use
+-- a corresponding call to 'closeStatement' before closing the connection. Use
 -- 'nextRow' to iterate on the values returned. Once 'nextRow' returns
 -- 'Nothing', you need to invoke 'reset' before reexecuting the statement again
 -- with 'nextRow'.
