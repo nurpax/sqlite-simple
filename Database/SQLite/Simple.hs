@@ -76,9 +76,11 @@ import           Control.Monad (void, when)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import           Data.Typeable (Typeable)
 import           Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
+import qualified Database.SQLite3.Direct as BaseD
 
 
 import           Database.SQLite.Simple.FromField (ResultError(..))
@@ -97,6 +99,14 @@ data FormatError = FormatError {
     } deriving (Eq, Show, Typeable)
 
 instance Exception FormatError
+
+-- | Exception thrown when an unexpected error occurs when interacting with
+-- SQLite.
+newtype SQLiteError = SQLiteError {
+  message :: String
+} deriving (Eq, Show, Typeable)
+
+instance Exception SQLiteError
 
 -- | Open a database connection to a given file.  Will throw an
 -- exception if it cannot connect.
@@ -119,17 +129,19 @@ close (Connection c) = Base.close c
 withConnection :: String -> (Connection -> IO a) -> IO a
 withConnection connString = bracket (open connString) close
 
-bind :: Query -> Base.Statement -> [Base.SQLData] -> IO ()
-bind templ stmt qp = do
+bind :: Base.Statement -> [Base.SQLData] -> IO ()
+bind stmt qp = do
   stmtParamCount <- Base.bindParameterCount stmt
   when (length qp /= fromIntegral stmtParamCount) (throwColumnMismatch qp stmtParamCount)
   mapM_ errorCheckParamName [1..stmtParamCount]
   Base.bind stmt qp
   where
-    throwColumnMismatch qp nParams =
+    throwColumnMismatch qp nParams = do
+      templ <- getQuery stmt
       fmtError ("SQL query contains " ++ show nParams ++ " params, but " ++
                 show (length qp) ++ " arguments given") templ qp
     errorCheckParamName paramNdx = do
+      templ <- getQuery stmt
       name <- Base.bindParameterName stmt paramNdx
       case name of
         Just n ->
@@ -139,8 +151,8 @@ bind templ stmt qp = do
 
 -- | Binds parameters to a prepared statement and then resets them, even in the
 -- presence of exceptions.
-withBind :: (ToRow params) => Query -> Base.Statement -> params -> (Base.Statement -> IO r) -> IO r
-withBind query stmt params = bracket (bind query stmt (toRow params) >> return stmt) Base.reset
+withBind :: (ToRow params) => Base.Statement -> params -> (Base.Statement -> IO r) -> IO r
+withBind stmt params = bracket (bind stmt (toRow params) >> return stmt) Base.reset
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
 -- a corresponding call to 'closeStmt' before closing the connection.
@@ -162,7 +174,7 @@ withStatementP conn template params action =
   withStatement conn template $ \stmt ->
     -- Don't use withBind here, there is no need to reset the parameters since
     -- we're destroying the statement
-    bind template stmt (toRow params) >> action stmt
+    bind stmt (toRow params) >> action stmt
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
@@ -287,6 +299,15 @@ fmtError msg q xs = throw FormatError {
                     , fmtQuery = q
                     , fmtParams = map show xs
                     }
+
+getQuery :: Base.Statement -> IO Query
+getQuery stmt = do
+  maybeQuery <- BaseD.statementSql stmt
+  case maybeQuery of
+    Just (BaseD.Utf8 queryText) -> return $ Query (TE.decodeUtf8 queryText)
+    _                           ->
+      throwIO SQLiteError { message = "No query found for the statement " ++
+        show stmt }
 
 -- $use
 -- Create a test database by copy pasting the below snippet to your
