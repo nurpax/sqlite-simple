@@ -3,7 +3,6 @@
 module Errors (
     testErrorsColumns
   , testErrorsInvalidParams
-  , testErrorsWithStatement_
   , testErrorsWithStatement
   ) where
 
@@ -71,17 +70,9 @@ testErrorsInvalidParams TestEnv{..} = TestCase $ do
   assertFormatErrorCaught
     (execute conn "INSERT INTO invparams (id, t) VALUES (?, ?)" (Only (3::Int)))
 
-testErrorsWithStatement_ :: TestEnv -> Test
-testErrorsWithStatement_ TestEnv{..} = TestCase $ do
-  execute_ conn "CREATE TABLE invstat (id INTEGER PRIMARY KEY, t TEXT)"
-  assertSQLErrorCaught $
-    withStatement_ conn "SELECT id, t, t1 FROM invstat" $ \_stmt ->
-      assertFailure "Error not detected"
-
 testErrorsWithStatement :: TestEnv -> Test
 testErrorsWithStatement TestEnv{..} = TestCase $ do
-  execute_ conn "CREATE TABLE invstatparams (id INTEGER PRIMARY KEY, t TEXT)"
-  execute_ conn "INSERT INTO invstatparams (id,t) VALUES (1, 'test')"
-  -- Wrong column name
-  assertSQLErrorCaught $ withStatement conn "SELECT id, t FROM invstatparams WHERE t1=? AND id=?" (1::Int, "foo"::String) $ \_stmt ->
-    assertFailure "Error not detected"
+  execute_ conn "CREATE TABLE invstat (id INTEGER PRIMARY KEY, t TEXT)"
+  assertSQLErrorCaught $
+    withStatement conn "SELECT id, t, t1 FROM invstat" $ \_stmt ->
+      assertFailure "Error not detected"

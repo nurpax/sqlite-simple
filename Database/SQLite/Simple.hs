@@ -53,7 +53,6 @@ module Database.SQLite.Simple (
   , openStatement
   , closeStatement
   , withStatement
-  , withStatement_
   , withBind
   , nextRow
     -- * Queries that return results
@@ -155,16 +154,16 @@ closeStatement = Base.finalize
 
 -- | Opens a prepared statement, executes an action using this statement, and
 -- closes the statement, even in the presence of exceptions.
-withStatement :: (ToRow params) => Connection -> Query -> params -> (Base.Statement -> IO r) -> IO r
-withStatement conn template params action =
-  withStatement_ conn template $ \stmt ->
+withStatement :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
+withStatement conn query = bracket (openStatement conn query) closeStatement
+
+-- A version of 'withStatement' which binds parameters.
+withStatementP :: (ToRow params) => Connection -> Query -> params -> (Base.Statement -> IO r) -> IO r
+withStatementP conn template params action =
+  withStatement conn template $ \stmt ->
     -- Don't use withBind here, there is no need to reset the parameters since
     -- we're destroying the statement
     bind template stmt (toRow params) >>= action
-
--- | A version of 'withStatement' which does not perform query substitution.
-withStatement_ :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
-withStatement_ conn query = bracket (openStatement conn query) closeStatement
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
@@ -172,7 +171,7 @@ withStatement_ conn query = bracket (openStatement conn query) closeStatement
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute conn template qs =
-  withStatement conn template qs $ \stmt ->
+  withStatementP conn template qs $ \stmt ->
     void . Base.step $ stmt
 
 
@@ -195,18 +194,18 @@ doFoldToList stmt =
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn templ qs =
-  withStatement conn templ qs $ \stmt ->
+  withStatementP conn templ qs $ \stmt ->
     doFoldToList stmt
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
 query_ conn query =
-  withStatement_ conn query doFoldToList
+  withStatement conn query doFoldToList
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
 execute_ conn template =
-  withStatement_ conn template $ \stmt ->
+  withStatement conn template $ \stmt ->
     void $ Base.step stmt
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return results.
@@ -229,7 +228,7 @@ fold :: ( FromRow row, ToRow params )
         -> (a -> row -> IO a)
         -> IO a
 fold conn query params initalState action =
-  withStatement conn query params $ \stmt ->
+  withStatementP conn query params $ \stmt ->
       doFold stmt initalState action
 
 -- | A version of 'fold' which does not perform parameter substitution.
@@ -240,7 +239,7 @@ fold_ :: ( FromRow row )
         -> (a -> row -> IO a)
         -> IO a
 fold_ conn query initalState action =
-  withStatement_ conn query $ \stmt ->
+  withStatement conn query $ \stmt ->
     doFold stmt initalState action
 
 doFold :: (FromRow row) => Base.Statement ->  a -> (a -> row -> IO a) -> IO a

@@ -26,7 +26,6 @@ tests =
     , TestLabel "ParamConv" . testParamConvBools
     , TestLabel "Errors"    . testErrorsColumns
     , TestLabel "Errors"    . testErrorsInvalidParams
-    , TestLabel "Errors"    . testErrorsWithStatement_
     , TestLabel "Errors"    . testErrorsWithStatement
     , TestLabel "Utf8"      . testUtf8Simplest
     , TestLabel "Utf8"      . testBlobs
