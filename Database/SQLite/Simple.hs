@@ -53,6 +53,8 @@ module Database.SQLite.Simple (
   , openStatement
   , closeStatement
   , withStatement
+  , bind
+  , reset
   , withBind
   , nextRow
     -- * Queries that return results
@@ -129,6 +131,9 @@ close (Connection c) = Base.close c
 withConnection :: String -> (Connection -> IO a) -> IO a
 withConnection connString = bracket (open connString) close
 
+-- | Binds parameters to a prepared statement. Once 'nextRow' returns 'Nothing',
+-- the statement must be reset with the 'reset' function before it can be
+-- executed again by calling 'nextRow'.
 bind :: Base.Statement -> [Base.SQLData] -> IO ()
 bind stmt qp = do
   stmtParamCount <- Base.bindParameterCount stmt
@@ -160,7 +165,10 @@ withBind :: (ToRow params) => Base.Statement -> params -> (Base.Statement -> IO 
 withBind stmt params = bracket (bind stmt (toRow params) >> return stmt) Base.reset
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
--- a corresponding call to 'closeStmt' before closing the connection.
+-- a corresponding call to 'closeStmt' before closing the connection. Use
+-- 'nextRow' to iterate on the values returned. Once 'nextRow' returns
+-- 'Nothing', you need to invoke 'reset' before reexecuting the statement again
+-- with 'nextRow'.
 openStatement :: Connection -> Query -> IO Base.Statement
 openStatement (Connection c) (Query t) = Base.prepare c t
 
