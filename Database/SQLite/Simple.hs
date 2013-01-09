@@ -119,13 +119,12 @@ close (Connection c) = Base.close c
 withConnection :: String -> (Connection -> IO a) -> IO a
 withConnection connString = bracket (open connString) close
 
-bind :: Query -> Base.Statement -> [Base.SQLData] -> IO Base.Statement
+bind :: Query -> Base.Statement -> [Base.SQLData] -> IO ()
 bind templ stmt qp = do
   stmtParamCount <- Base.bindParameterCount stmt
   when (length qp /= fromIntegral stmtParamCount) (throwColumnMismatch qp stmtParamCount)
   mapM_ errorCheckParamName [1..stmtParamCount]
   Base.bind stmt qp
-  return stmt
   where
     throwColumnMismatch qp nParams =
       fmtError ("SQL query contains " ++ show nParams ++ " params, but " ++
@@ -141,7 +140,7 @@ bind templ stmt qp = do
 -- | Binds parameters to a prepared statement and then resets them, even in the
 -- presence of exceptions.
 withBind :: (ToRow params) => Query -> Base.Statement -> params -> (Base.Statement -> IO r) -> IO r
-withBind query stmt params = bracket (bind query stmt (toRow params)) Base.reset
+withBind query stmt params = bracket (bind query stmt (toRow params) >> return stmt) Base.reset
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
 -- a corresponding call to 'closeStmt' before closing the connection.
@@ -163,7 +162,7 @@ withStatementP conn template params action =
   withStatement conn template $ \stmt ->
     -- Don't use withBind here, there is no need to reset the parameters since
     -- we're destroying the statement
-    bind template stmt (toRow params) >>= action
+    bind template stmt (toRow params) >> action stmt
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
