@@ -44,7 +44,7 @@ module Database.SQLite.Simple (
   , Only(..)
   , (:.)(..)
   , Base.SQLData(..)
-
+  , Statement
     -- * Connections
   , open
   , close
@@ -91,6 +91,9 @@ import           Database.SQLite.Simple.Ok
 import           Database.SQLite.Simple.ToRow (ToRow(..))
 import           Database.SQLite.Simple.FromRow
 
+-- | An SQLite prepared statement.
+newtype Statement = Statement { statement :: Base.Statement }
+
 -- | Exception thrown if a 'Query' was malformed.
 -- This may occur if the number of \'@?@\' characters in the query
 -- string does not match the number of parameters provided.
@@ -134,8 +137,8 @@ withConnection connString = bracket (open connString) close
 -- | Binds parameters to a prepared statement. Once 'nextRow' returns 'Nothing',
 -- the statement must be reset with the 'reset' function before it can be
 -- executed again by calling 'nextRow'.
-bind :: Base.Statement -> [Base.SQLData] -> IO ()
-bind stmt qp = do
+bind :: Statement -> [Base.SQLData] -> IO ()
+bind (Statement stmt) qp = do
   stmtParamCount <- Base.bindParameterCount stmt
   when (length qp /= fromIntegral stmtParamCount) (throwColumnMismatch qp stmtParamCount)
   mapM_ errorCheckParamName [1..stmtParamCount]
@@ -156,33 +159,35 @@ bind stmt qp = do
 
 -- | Resets a statement. This does not reset bound parameters, if any, but
 -- allows the statement to be reexecuted again by invoking 'nextRow'.
-reset :: Base.Statement -> IO ()
-reset = Base.reset
+reset :: Statement -> IO ()
+reset (Statement stmt) = Base.reset stmt
 
 -- | Binds parameters to a prepared statement and then resets them, even in the
 -- presence of exceptions.
-withBind :: (ToRow params) => Base.Statement -> params -> (Base.Statement -> IO r) -> IO r
-withBind stmt params = bracket (bind stmt (toRow params) >> return stmt) Base.reset
+withBind :: (ToRow params) => Statement -> params -> (Statement -> IO r) -> IO r
+withBind stmt params = bracket (bind stmt (toRow params) >> return stmt) reset
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
 -- a corresponding call to 'closeStatement' before closing the connection. Use
 -- 'nextRow' to iterate on the values returned. Once 'nextRow' returns
 -- 'Nothing', you need to invoke 'reset' before reexecuting the statement again
 -- with 'nextRow'.
-openStatement :: Connection -> Query -> IO Base.Statement
-openStatement (Connection c) (Query t) = Base.prepare c t
+openStatement :: Connection -> Query -> IO Statement
+openStatement (Connection c) (Query t) = do
+  stmt <- Base.prepare c t
+  return $ Statement stmt
 
 -- | Closes a prepared statement.
-closeStatement :: Base.Statement -> IO ()
-closeStatement = Base.finalize
+closeStatement :: Statement -> IO ()
+closeStatement (Statement stmt) = Base.finalize stmt
 
 -- | Opens a prepared statement, executes an action using this statement, and
 -- closes the statement, even in the presence of exceptions.
-withStatement :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
+withStatement :: Connection -> Query -> (Statement -> IO r) -> IO r
 withStatement conn query = bracket (openStatement conn query) closeStatement
 
 -- A version of 'withStatement' which binds parameters.
-withStatementP :: (ToRow params) => Connection -> Query -> params -> (Base.Statement -> IO r) -> IO r
+withStatementP :: (ToRow params) => Connection -> Query -> params -> (Statement -> IO r) -> IO r
 withStatementP conn template params action =
   withStatement conn template $ \stmt ->
     -- Don't use withBind here, there is no need to reset the parameters since
@@ -195,11 +200,11 @@ withStatementP conn template params action =
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute conn template qs =
-  withStatementP conn template qs $ \stmt ->
+  withStatementP conn template qs $ \(Statement stmt) ->
     void . Base.step $ stmt
 
 
-doFoldToList :: (FromRow row) => Base.Statement -> IO [row]
+doFoldToList :: (FromRow row) => Statement -> IO [row]
 doFoldToList stmt =
   fmap reverse $ doFold stmt [] (\acc e -> return (e : acc))
 
@@ -229,7 +234,7 @@ query_ conn query =
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
 execute_ conn template =
-  withStatement conn template $ \stmt ->
+  withStatement conn template $ \(Statement stmt) ->
     void $ Base.step stmt
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return results.
@@ -266,7 +271,7 @@ fold_ conn query initalState action =
   withStatement conn query $ \stmt ->
     doFold stmt initalState action
 
-doFold :: (FromRow row) => Base.Statement ->  a -> (a -> row -> IO a) -> IO a
+doFold :: (FromRow row) => Statement ->  a -> (a -> row -> IO a) -> IO a
 doFold stmt initState action =
   loop initState
   where
@@ -279,8 +284,8 @@ doFold stmt initState action =
         Nothing   -> return val
 
 -- | Extracts the next row from the prepared statement.
-nextRow :: (FromRow r) => Base.Statement -> IO (Maybe r)
-nextRow stmt = do
+nextRow :: (FromRow r) => Statement -> IO (Maybe r)
+nextRow (Statement stmt) = do
   statRes <- Base.step stmt
   case statRes of
     Base.Row    -> do
