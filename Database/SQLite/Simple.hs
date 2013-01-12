@@ -105,14 +105,6 @@ data FormatError = FormatError {
 
 instance Exception FormatError
 
--- | Exception thrown when an unexpected error occurs when interacting with
--- SQLite.
-newtype SQLiteError = SQLiteError {
-  message :: String
-} deriving (Eq, Show, Typeable)
-
-instance Exception SQLiteError
-
 -- | Open a database connection to a given file.  Will throw an
 -- exception if it cannot connect.
 --
@@ -319,13 +311,11 @@ fmtError msg q xs = throw FormatError {
                     }
 
 getQuery :: Base.Statement -> IO Query
-getQuery stmt = do
-  maybeQuery <- BaseD.statementSql stmt
-  case maybeQuery of
-    Just (BaseD.Utf8 queryText) -> return $ Query (TE.decodeUtf8 queryText)
-    _                           ->
-      throwIO SQLiteError { message = "No query found for the statement " ++
-        show stmt }
+getQuery stmt =
+  toQuery <$> BaseD.statementSql stmt
+  where
+    toQuery =
+      Query . maybe "no query string" (\(BaseD.Utf8 s) -> TE.decodeUtf8 s)
 
 -- $use
 -- Create a test database by copy pasting the below snippet to your
