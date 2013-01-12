@@ -50,14 +50,6 @@ module Database.SQLite.Simple (
   , close
   , withConnection
   , setTrace
-    -- * Statements
-  , openStatement
-  , closeStatement
-  , withStatement
-  , bind
-  , reset
-  , withBind
-  , nextRow
     -- * Queries that return results
   , query
   , query_
@@ -68,14 +60,21 @@ module Database.SQLite.Simple (
   , field
   , fold
   , fold_
+    -- * Low-level statement API for stream access and prepared statements
+  , openStatement
+  , closeStatement
+  , withStatement
+  , bind
+  , reset
+  , withBind
+  , nextRow
     -- ** Exceptions
   , FormatError(fmtMessage, fmtQuery, fmtParams)
   , ResultError(errSQLType, errHaskellType, errMessage)
   ) where
 
 import           Control.Applicative
-import           Control.Exception
-  ( Exception, throw, throwIO, bracket )
+import           Control.Exception (Exception, throw, throwIO, bracket)
 import           Control.Monad (void, when)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
