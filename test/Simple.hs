@@ -5,7 +5,9 @@ module Simple (
   , testSimpleSelect
   , testSimpleParams
   , testSimpleTime
-  , testSimpleTimeFract) where
+  , testSimpleTimeFract
+  , testSimpleInsertId
+  ) where
 
 import qualified Data.Text as T
 import Data.Time (UTCTime)
@@ -90,3 +92,18 @@ testSimpleTimeFract TestEnv{..} = TestCase $ do
   rows <- query conn "SELECT * FROM timefract WHERE t = ?" (Only time) :: IO [Only UTCTime]
   assertEqual "should see one row result" 1 (length rows)
   assertEqual "UTCTime" time t
+
+testSimpleInsertId :: TestEnv -> Test
+testSimpleInsertId TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE test_row_id (id INTEGER PRIMARY KEY, t TEXT)"
+  execute conn "INSERT INTO test_row_id (t) VALUES (?)" (Only ("test string" :: String))
+  id1 <- lastInsertRowId conn
+  execute_ conn "INSERT INTO test_row_id (t) VALUES ('test2')"
+  id2 <- lastInsertRowId conn
+  1 @=? id1
+  2 @=? id2
+  rows <- query conn "SELECT t FROM test_row_id WHERE id = ?" (Only (1 :: Int)) :: IO [Only String]
+  1 @=?  (length rows)
+  (Only "test string") @=? (head rows)
+  [Only row] <- query conn "SELECT t FROM test_row_id WHERE id = ?" (Only (2 :: Int)) :: IO [Only String]
+  "test2" @=? row

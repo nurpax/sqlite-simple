@@ -58,6 +58,7 @@ module Database.SQLite.Simple (
   , reset
   , withBind
   , nextRow
+  , lastInsertRowId
     -- * Queries that return results
   , query
   , query_
@@ -78,6 +79,7 @@ import           Control.Exception
 import           Control.Monad (void, when)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
+import           Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import           Data.Typeable (Typeable)
@@ -317,6 +319,10 @@ convertRow rowRes ncols = do
     Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
     Errors [x] -> throwIO x
     Errors xs  -> throwIO $ ManyErrors xs
+
+
+lastInsertRowId :: Connection -> IO Int64
+lastInsertRowId (Connection c) = BaseD.lastInsertRowId c
 
 fmtError :: String -> Query -> [Base.SQLData] -> a
 fmtError msg q xs = throw FormatError {

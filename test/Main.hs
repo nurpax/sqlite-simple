@@ -22,6 +22,7 @@ tests =
     , TestLabel "Simple"    . testSimpleParams
     , TestLabel "Simple"    . testSimpleTime
     , TestLabel "Simple"    . testSimpleTimeFract
+    , TestLabel "Simple"    . testSimpleInsertId
     , TestLabel "ParamConv" . testParamConvInt
     , TestLabel "ParamConv" . testParamConvFloat
     , TestLabel "ParamConv" . testParamConvDateTime
