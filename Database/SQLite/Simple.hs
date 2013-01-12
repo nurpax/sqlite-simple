@@ -173,8 +173,9 @@ reset (Statement stmt) = Base.reset stmt
 
 -- | Binds parameters to a prepared statement and then resets them, even in the
 -- presence of exceptions.
-withBind :: (ToRow params) => Statement -> params -> (Statement -> IO a) -> IO a
-withBind stmt params = bracket (bind stmt params >> return stmt) reset
+withBind :: (ToRow params) => Statement -> params -> IO a -> IO a
+withBind stmt params io =
+  bracket (bind stmt params >> return stmt) reset (const io)
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
 -- a corresponding call to 'closeStatement' before closing the connection. Use
