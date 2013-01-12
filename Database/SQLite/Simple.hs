@@ -258,7 +258,7 @@ fold :: ( FromRow row, ToRow params )
         -> IO a
 fold conn query params initalState action =
   withStatementP conn query params $ \stmt ->
-      doFold stmt initalState action
+    doFold stmt initalState action
 
 -- | A version of 'fold' which does not perform parameter substitution.
 fold_ :: ( FromRow row )
@@ -288,12 +288,12 @@ nextRow :: (FromRow r) => Statement -> IO (Maybe r)
 nextRow (Statement stmt) = do
   statRes <- Base.step stmt
   case statRes of
-    Base.Row    -> do
+    Base.Row -> do
       rowRes <- Base.columns stmt
       let nCols = length rowRes
       row <- convertRow rowRes nCols
       return $ Just row
-    Base.Done   -> return Nothing
+    Base.Done -> return Nothing
 
 convertRow :: (FromRow r) => [Base.SQLData] -> Int -> IO r
 convertRow rowRes ncols = do
