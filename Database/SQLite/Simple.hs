@@ -173,7 +173,7 @@ reset (Statement stmt) = Base.reset stmt
 
 -- | Binds parameters to a prepared statement and then resets them, even in the
 -- presence of exceptions.
-withBind :: (ToRow params) => Statement -> params -> (Statement -> IO r) -> IO r
+withBind :: (ToRow params) => Statement -> params -> (Statement -> IO a) -> IO a
 withBind stmt params = bracket (bind stmt params >> return stmt) reset
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
@@ -192,11 +192,11 @@ closeStatement (Statement stmt) = Base.finalize stmt
 
 -- | Opens a prepared statement, executes an action using this statement, and
 -- closes the statement, even in the presence of exceptions.
-withStatement :: Connection -> Query -> (Statement -> IO r) -> IO r
+withStatement :: Connection -> Query -> (Statement -> IO a) -> IO a
 withStatement conn query = bracket (openStatement conn query) closeStatement
 
 -- A version of 'withStatement' which binds parameters.
-withStatementP :: (ToRow params) => Connection -> Query -> params -> (Statement -> IO r) -> IO r
+withStatementP :: (ToRow params) => Connection -> Query -> params -> (Statement -> IO a) -> IO a
 withStatementP conn template params action =
   withStatement conn template $ \stmt ->
     -- Don't use withBind here, there is no need to reset the parameters since
