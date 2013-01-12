@@ -129,18 +129,19 @@ withConnection connString = bracket (open connString) close
 -- | Binds parameters to a prepared statement. Once 'nextRow' returns 'Nothing',
 -- the statement must be reset with the 'reset' function before it can be
 -- executed again by calling 'nextRow'.
-bind :: Statement -> [Base.SQLData] -> IO ()
-bind (Statement stmt) qp = do
+bind :: (ToRow params) => Statement -> params -> IO ()
+bind (Statement stmt) params = do
+  let qp = toRow params
   stmtParamCount <- Base.bindParameterCount stmt
   when (length qp /= fromIntegral stmtParamCount) (throwColumnMismatch qp stmtParamCount)
-  mapM_ errorCheckParamName [1..stmtParamCount]
+  mapM_ (errorCheckParamName qp) [1..stmtParamCount]
   Base.bind stmt qp
   where
     throwColumnMismatch qp nParams = do
       templ <- getQuery stmt
       fmtError ("SQL query contains " ++ show nParams ++ " params, but " ++
                 show (length qp) ++ " arguments given") templ qp
-    errorCheckParamName paramNdx = do
+    errorCheckParamName qp paramNdx = do
       templ <- getQuery stmt
       name <- Base.bindParameterName stmt paramNdx
       case name of
@@ -157,7 +158,7 @@ reset (Statement stmt) = Base.reset stmt
 -- | Binds parameters to a prepared statement and then resets them, even in the
 -- presence of exceptions.
 withBind :: (ToRow params) => Statement -> params -> (Statement -> IO r) -> IO r
-withBind stmt params = bracket (bind stmt (toRow params) >> return stmt) reset
+withBind stmt params = bracket (bind stmt params >> return stmt) reset
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
 -- a corresponding call to 'closeStatement' before closing the connection. Use
