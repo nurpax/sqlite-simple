@@ -44,11 +44,19 @@ module Database.SQLite.Simple (
   , Only(..)
   , (:.)(..)
   , Base.SQLData(..)
-
+  , Statement
     -- * Connections
   , open
   , close
   , withConnection
+    -- * Statements
+  , openStatement
+  , closeStatement
+  , withStatement
+  , bind
+  , reset
+  , withBind
+  , nextRow
     -- * Queries that return results
   , query
   , query_
@@ -70,9 +78,11 @@ import           Control.Monad (void, when)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import           Data.Typeable (Typeable)
 import           Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
+import qualified Database.SQLite3.Direct as BaseD
 
 
 import           Database.SQLite.Simple.FromField (ResultError(..))
@@ -80,6 +90,9 @@ import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
 import           Database.SQLite.Simple.ToRow (ToRow(..))
 import           Database.SQLite.Simple.FromRow
+
+-- | An SQLite prepared statement.
+newtype Statement = Statement { statement :: Base.Statement }
 
 -- | Exception thrown if a 'Query' was malformed.
 -- This may occur if the number of \'@?@\' characters in the query
@@ -91,6 +104,14 @@ data FormatError = FormatError {
     } deriving (Eq, Show, Typeable)
 
 instance Exception FormatError
+
+-- | Exception thrown when an unexpected error occurs when interacting with
+-- SQLite.
+newtype SQLiteError = SQLiteError {
+  message :: String
+} deriving (Eq, Show, Typeable)
+
+instance Exception SQLiteError
 
 -- | Open a database connection to a given file.  Will throw an
 -- exception if it cannot connect.
@@ -113,18 +134,22 @@ close (Connection c) = Base.close c
 withConnection :: String -> (Connection -> IO a) -> IO a
 withConnection connString = bracket (open connString) close
 
-withBind :: Query -> Base.Statement -> [Base.SQLData] -> IO r -> IO r
-withBind templ stmt qp action = do
+-- | Binds parameters to a prepared statement. Once 'nextRow' returns 'Nothing',
+-- the statement must be reset with the 'reset' function before it can be
+-- executed again by calling 'nextRow'.
+bind :: Statement -> [Base.SQLData] -> IO ()
+bind (Statement stmt) qp = do
   stmtParamCount <- Base.bindParameterCount stmt
   when (length qp /= fromIntegral stmtParamCount) (throwColumnMismatch qp stmtParamCount)
   mapM_ errorCheckParamName [1..stmtParamCount]
   Base.bind stmt qp
-  action
   where
-    throwColumnMismatch qp nParams =
+    throwColumnMismatch qp nParams = do
+      templ <- getQuery stmt
       fmtError ("SQL query contains " ++ show nParams ++ " params, but " ++
                 show (length qp) ++ " arguments given") templ qp
     errorCheckParamName paramNdx = do
+      templ <- getQuery stmt
       name <- Base.bindParameterName stmt paramNdx
       case name of
         Just n ->
@@ -132,8 +157,42 @@ withBind templ stmt qp action = do
                     templ qp
         Nothing -> return ()
 
-withStatement :: Connection -> Query -> (Base.Statement -> IO r) -> IO r
-withStatement (Connection c) (Query t) = bracket (Base.prepare c t) Base.finalize
+-- | Resets a statement. This does not reset bound parameters, if any, but
+-- allows the statement to be reexecuted again by invoking 'nextRow'.
+reset :: Statement -> IO ()
+reset (Statement stmt) = Base.reset stmt
+
+-- | Binds parameters to a prepared statement and then resets them, even in the
+-- presence of exceptions.
+withBind :: (ToRow params) => Statement -> params -> (Statement -> IO r) -> IO r
+withBind stmt params = bracket (bind stmt (toRow params) >> return stmt) reset
+
+-- | Opens a prepared statement. A prepared statement must always be closed with
+-- a corresponding call to 'closeStatement' before closing the connection. Use
+-- 'nextRow' to iterate on the values returned. Once 'nextRow' returns
+-- 'Nothing', you need to invoke 'reset' before reexecuting the statement again
+-- with 'nextRow'.
+openStatement :: Connection -> Query -> IO Statement
+openStatement (Connection c) (Query t) = do
+  stmt <- Base.prepare c t
+  return $ Statement stmt
+
+-- | Closes a prepared statement.
+closeStatement :: Statement -> IO ()
+closeStatement (Statement stmt) = Base.finalize stmt
+
+-- | Opens a prepared statement, executes an action using this statement, and
+-- closes the statement, even in the presence of exceptions.
+withStatement :: Connection -> Query -> (Statement -> IO r) -> IO r
+withStatement conn query = bracket (openStatement conn query) closeStatement
+
+-- A version of 'withStatement' which binds parameters.
+withStatementP :: (ToRow params) => Connection -> Query -> params -> (Statement -> IO r) -> IO r
+withStatementP conn template params action =
+  withStatement conn template $ \stmt ->
+    -- Don't use withBind here, there is no need to reset the parameters since
+    -- we're destroying the statement
+    bind stmt (toRow params) >> action stmt
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
@@ -141,11 +200,11 @@ withStatement (Connection c) (Query t) = bracket (Base.prepare c t) Base.finaliz
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute conn template qs =
-  withStatement conn template $ \stmt ->
-    withBind template stmt (toRow qs) (void $ Base.step stmt)
+  withStatementP conn template qs $ \(Statement stmt) ->
+    void . Base.step $ stmt
 
 
-doFoldToList :: (FromRow row) => Base.Statement -> IO [row]
+doFoldToList :: (FromRow row) => Statement -> IO [row]
 doFoldToList stmt =
   fmap reverse $ doFold stmt [] (\acc e -> return (e : acc))
 
@@ -164,8 +223,8 @@ doFoldToList stmt =
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn templ qs =
-  withStatement conn templ $ \stmt ->
-    withBind templ stmt (toRow qs) (doFoldToList stmt)
+  withStatementP conn templ qs $ \stmt ->
+    doFoldToList stmt
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
@@ -175,7 +234,7 @@ query_ conn query =
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
 execute_ conn template =
-  withStatement conn template $ \stmt ->
+  withStatement conn template $ \(Statement stmt) ->
     void $ Base.step stmt
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return results.
@@ -198,9 +257,8 @@ fold :: ( FromRow row, ToRow params )
         -> (a -> row -> IO a)
         -> IO a
 fold conn query params initalState action =
-  withStatement conn query $ \stmt ->
-    withBind query stmt (toRow params)
-      (doFold stmt initalState action)
+  withStatementP conn query params $ \stmt ->
+      doFold stmt initalState action
 
 -- | A version of 'fold' which does not perform parameter substitution.
 fold_ :: ( FromRow row )
@@ -213,24 +271,33 @@ fold_ conn query initalState action =
   withStatement conn query $ \stmt ->
     doFold stmt initalState action
 
-doFold :: (FromRow row) => Base.Statement ->  a -> (a -> row -> IO a) -> IO a
-doFold stmt initState action = do
-  nCols <- Base.columnCount stmt
-  loop (fromIntegral nCols) 0 initState
+doFold :: (FromRow row) => Statement ->  a -> (a -> row -> IO a) -> IO a
+doFold stmt initState action =
+  loop initState
   where
-    loop nCols i val = do
-      statRes <- Base.step stmt
-      case statRes of
-        Base.Row    -> do
-          rowRes <- Base.columns stmt
-          res <- convertRow rowRes i nCols
-          val' <- action val res
-          loop nCols (i+1) val'
-        Base.Done   -> return val
+    loop val = do
+      maybeNextRow <- nextRow stmt
+      case maybeNextRow of
+        Just row  -> do
+          val' <- action val row
+          loop val'
+        Nothing   -> return val
 
-convertRow :: (FromRow r) => [Base.SQLData] -> Int -> Int -> IO r
-convertRow rowRes rowNdx ncols = do
-  let rw = Row rowNdx rowRes
+-- | Extracts the next row from the prepared statement.
+nextRow :: (FromRow r) => Statement -> IO (Maybe r)
+nextRow (Statement stmt) = do
+  statRes <- Base.step stmt
+  case statRes of
+    Base.Row    -> do
+      rowRes <- Base.columns stmt
+      let nCols = length rowRes
+      row <- convertRow rowRes nCols
+      return $ Just row
+    Base.Done   -> return Nothing
+
+convertRow :: (FromRow r) => [Base.SQLData] -> Int -> IO r
+convertRow rowRes ncols = do
+  let rw = Row rowRes
   case runStateT (runReaderT (unRP fromRow) rw) 0 of
     Ok (val,col) | col == ncols -> return val
                  | otherwise -> do
@@ -250,6 +317,15 @@ fmtError msg q xs = throw FormatError {
                     , fmtQuery = q
                     , fmtParams = map show xs
                     }
+
+getQuery :: Base.Statement -> IO Query
+getQuery stmt = do
+  maybeQuery <- BaseD.statementSql stmt
+  case maybeQuery of
+    Just (BaseD.Utf8 queryText) -> return $ Query (TE.decodeUtf8 queryText)
+    _                           ->
+      throwIO SQLiteError { message = "No query found for the statement " ++
+        show stmt }
 
 -- $use
 -- Create a test database by copy pasting the below snippet to your

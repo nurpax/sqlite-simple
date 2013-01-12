@@ -3,6 +3,7 @@
 module Errors (
     testErrorsColumns
   , testErrorsInvalidParams
+  , testErrorsWithStatement
   ) where
 
 import Prelude hiding (catch)
@@ -11,6 +12,7 @@ import qualified Data.ByteString as B
 import Data.Word
 
 import Common
+import Database.SQLite3 (SQLError)
 
 assertResultErrorCaught :: IO a -> Assertion
 assertResultErrorCaught action = do
@@ -21,6 +23,11 @@ assertFormatErrorCaught :: IO a -> Assertion
 assertFormatErrorCaught action = do
   catch (action >> return False) (\(_ :: FormatError) -> return True) >>=
     assertBool "assertFormatError exc"
+
+assertSQLErrorCaught :: IO a -> Assertion
+assertSQLErrorCaught action = do
+  catch (action >> return False) (\(_ :: SQLError) -> return True) >>=
+    assertBool "assertErrorError exc"
 
 testErrorsColumns :: TestEnv -> Test
 testErrorsColumns TestEnv{..} = TestCase $ do
@@ -62,3 +69,10 @@ testErrorsInvalidParams TestEnv{..} = TestCase $ do
   -- execute.  This should cause an error.
   assertFormatErrorCaught
     (execute conn "INSERT INTO invparams (id, t) VALUES (?, ?)" (Only (3::Int)))
+
+testErrorsWithStatement :: TestEnv -> Test
+testErrorsWithStatement TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE invstat (id INTEGER PRIMARY KEY, t TEXT)"
+  assertSQLErrorCaught $
+    withStatement conn "SELECT id, t, t1 FROM invstat" $ \_stmt ->
+      assertFailure "Error not detected"

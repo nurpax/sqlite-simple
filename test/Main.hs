@@ -12,6 +12,7 @@ import Utf8Strings
 import UserInstances
 import TestImports()
 import Fold
+import Statement
 
 tests :: [TestEnv -> Test]
 tests =
@@ -26,10 +27,13 @@ tests =
     , TestLabel "ParamConv" . testParamConvBools
     , TestLabel "Errors"    . testErrorsColumns
     , TestLabel "Errors"    . testErrorsInvalidParams
+    , TestLabel "Errors"    . testErrorsWithStatement
     , TestLabel "Utf8"      . testUtf8Simplest
     , TestLabel "Utf8"      . testBlobs
     , TestLabel "Instances" . testUserFromField
     , TestLabel "Fold"      . testFolds
+    , TestLabel "Statement" . testBind
+    , TestLabel "Statement" . testDoubleBind
     ]
 
 -- | Action for connecting to the database that will be used for testing.

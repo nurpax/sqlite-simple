@@ -41,10 +41,7 @@ data Field = Field {
    , column   :: {-# UNPACK #-} !Int
    }
 
-data Row = Row {
-     row        :: {-# UNPACK #-} !Int
-   , rowresult  :: [Base.SQLData]
-   }
+newtype Row = Row { rowresult  :: [Base.SQLData] }
 
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad )
