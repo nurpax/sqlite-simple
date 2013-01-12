@@ -36,6 +36,7 @@ tests =
     , TestLabel "Fold"      . testFolds
     , TestLabel "Statement" . testBind
     , TestLabel "Statement" . testDoubleBind
+    , TestLabel "Statement" . testPreparedStatements
     , TestLabel "Debug"     . testDebugTracing
     ]
 

@@ -3,7 +3,8 @@
 module Statement (
     testBind
   , testDoubleBind
-) where
+  , testPreparedStatements
+  ) where
 
 import Common
 import Data.Maybe(fromJust)
@@ -30,3 +31,18 @@ testDoubleBind TestEnv{..} = TestCase $ do
     withBind stmt [2::Int] $ \stmt -> do
       row <- nextRow stmt :: IO (Maybe (Only String))
       assertEqual "second result" (Only "second result") (fromJust row)
+
+testPreparedStatements :: TestEnv -> Test
+testPreparedStatements TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE ps (id INTEGER PRIMARY KEY, t TEXT)"
+  execute_ conn "INSERT INTO ps VALUES(1, 'first result')"
+  execute_ conn "INSERT INTO ps VALUES(2, 'second result')"
+  withStatement conn "SELECT t FROM ps WHERE id=?" $ \stmt -> do
+    elems <- mapM (queryOne stmt) [1 :: Int, 2]
+    ["first result" :: String, "second result"] @=? elems
+    where
+      queryOne stmt rowId =
+        withBind stmt (Only rowId) $ \_ -> do
+          Just (Only r) <- nextRow stmt
+          Nothing <- nextRow stmt :: IO (Maybe (Only String))
+          return r
