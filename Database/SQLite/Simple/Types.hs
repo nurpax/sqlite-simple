@@ -49,7 +49,7 @@ instance Eq Null where
 --
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- >
--- > import Database.PostgreSQL.Simple
+-- > import Database.SQLite.Simple
 -- >
 -- > q :: Query
 -- > q = "select ?"

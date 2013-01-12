@@ -58,10 +58,10 @@ module Database.SQLite.Simple (
   , reset
   , withBind
   , nextRow
-  , lastInsertRowId
     -- * Queries that return results
   , query
   , query_
+  , lastInsertRowId
     -- * Statements that do not return results
   , execute
   , execute_
@@ -320,7 +320,10 @@ convertRow rowRes ncols = do
     Errors [x] -> throwIO x
     Errors xs  -> throwIO $ ManyErrors xs
 
-
+-- | Returns the rowid of the most recent successful INSERT on the
+-- given database connection.
+--
+-- See also <http://www.sqlite.org/c3ref/last_insert_rowid.html>.
 lastInsertRowId :: Connection -> IO Int64
 lastInsertRowId (Connection c) = BaseD.lastInsertRowId c
 
