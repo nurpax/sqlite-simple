@@ -92,7 +92,7 @@ import           Database.SQLite.Simple.ToRow (ToRow(..))
 import           Database.SQLite.Simple.FromRow
 
 -- | An SQLite prepared statement.
-newtype Statement = Statement { statement :: Base.Statement }
+newtype Statement = Statement Base.Statement
 
 -- | Exception thrown if a 'Query' was malformed.
 -- This may occur if the number of \'@?@\' characters in the query
