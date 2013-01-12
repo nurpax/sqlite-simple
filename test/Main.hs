@@ -13,6 +13,7 @@ import UserInstances
 import TestImports()
 import Fold
 import Statement
+import Debug
 
 tests :: [TestEnv -> Test]
 tests =
@@ -34,6 +35,7 @@ tests =
     , TestLabel "Fold"      . testFolds
     , TestLabel "Statement" . testBind
     , TestLabel "Statement" . testDoubleBind
+    , TestLabel "Debug"     . testDebugTracing
     ]
 
 -- | Action for connecting to the database that will be used for testing.

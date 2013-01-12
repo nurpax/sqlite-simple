@@ -49,6 +49,7 @@ module Database.SQLite.Simple (
   , open
   , close
   , withConnection
+  , setTrace
     -- * Statements
   , openStatement
   , closeStatement
@@ -125,6 +126,19 @@ close (Connection c) = Base.close c
 -- closes the connection, even in the presence of exceptions.
 withConnection :: String -> (Connection -> IO a) -> IO a
 withConnection connString = bracket (open connString) close
+
+-- | <http://www.sqlite.org/c3ref/profile.html>
+--
+-- Enable/disable tracing of SQL execution.  Tracing can be disabled
+-- by setting 'Nothing' as the logger callback.
+--
+-- Warning: If the logger callback throws an exception, your whole
+-- program may crash.  Enable only for debugging!
+setTrace :: Connection -> Maybe (T.Text -> IO ()) -> IO ()
+setTrace (Connection db) logger =
+  BaseD.setTrace db (fmap (\lf -> lf . unUtf8) logger)
+  where
+    unUtf8 (BaseD.Utf8 bs) = TE.decodeUtf8 bs
 
 -- | Binds parameters to a prepared statement. Once 'nextRow' returns 'Nothing',
 -- the statement must be reset with the 'reset' function before it can be
