@@ -14,6 +14,7 @@ import TestImports()
 import Fold
 import Statement
 import Debug
+import DirectSqlite
 
 tests :: [TestEnv -> Test]
 tests =
@@ -38,6 +39,7 @@ tests =
     , TestLabel "Statement" . testDoubleBind
     , TestLabel "Statement" . testPreparedStatements
     , TestLabel "Debug"     . testDebugTracing
+    , TestLabel "Direct"    . testDirectSqlite
     ]
 
 -- | Action for connecting to the database that will be used for testing.

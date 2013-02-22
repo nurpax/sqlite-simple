@@ -32,7 +32,14 @@ import           Database.SQLite.Simple.Ok
 import qualified Database.SQLite3 as Base
 
 -- | Connection to an open database.
-data Connection = Connection Base.Database
+--
+-- You can use 'connectionHandle' to gain access to the underlying
+-- <http://hackage.haskell.org/package/direct-sqlite> connection.
+-- This may be useful if you need to access some direct-sqlite
+-- functionality that's not exposed in the sqlite-simple API.  This
+-- should be a safe thing to do although mixing both APIs is
+-- discouraged.
+newtype Connection = Connection { connectionHandle :: Base.Database }
 
 -- | A Field represents metadata about a particular field
 

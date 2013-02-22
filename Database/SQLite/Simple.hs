@@ -38,7 +38,7 @@ module Database.SQLite.Simple (
     -- ** Type conversions
     -- $types
     Query(..)
-  , Connection
+  , Connection(..)
   , ToRow(..)
   , FromRow(..)
   , Only(..)
