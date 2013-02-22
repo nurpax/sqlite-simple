@@ -39,10 +39,12 @@ import           Control.Applicative (Applicative, (<$>), pure)
 import           Control.Exception (SomeException(..), Exception)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int16, Int32, Int64)
 import           Data.Time (UTCTime, Day)
 import           Data.Time.Format (parseTime)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
 import           Data.Typeable (Typeable, typeOf)
 
 import           System.Locale (defaultTimeLocale)
@@ -139,14 +141,20 @@ instance FromField T.Text where
     fromField (Field (SQLText txt) _) = Ok txt
     fromField f                       = returnError ConversionFailed f "need a text"
 
+instance FromField LT.Text where
+    fromField (Field (SQLText txt) _) = Ok . LT.fromStrict $ txt
+    fromField f                       = returnError ConversionFailed f "need a text"
+
 instance FromField [Char] where
   fromField (Field (SQLText t) _) = Ok $ T.unpack t
   fromField f                     = returnError ConversionFailed f "expecting SQLText column type"
 
--- TODO ToRow has both T and LB variants of ByteString, check what's
--- really needed here
 instance FromField ByteString where
   fromField (Field (SQLBlob blb) _) = Ok blb
+  fromField f                       = returnError ConversionFailed f "expecting SQLBlob column type"
+
+instance FromField LB.ByteString where
+  fromField (Field (SQLBlob blb) _) = Ok . LB.fromChunks $ [blb]
   fromField f                       = returnError ConversionFailed f "expecting SQLBlob column type"
 
 instance FromField UTCTime where
