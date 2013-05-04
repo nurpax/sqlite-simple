@@ -318,7 +318,7 @@ convertRow rowRes ncols = do
     Ok (val,col) | col == ncols -> return val
                  | otherwise -> do
                      let vals = map (\f -> (gettypename f, f)) rowRes
-                     throw (ConversionFailed
+                     throwIO (ConversionFailed
                        (show ncols ++ " values: " ++ show vals)
                        (show col ++ " slots in target type")
                        "mismatch between number of columns to \
