@@ -170,8 +170,14 @@ bind (Statement stmt) params = do
 reset :: Statement -> IO ()
 reset (Statement stmt) = Base.reset stmt
 
--- | Binds parameters to a prepared statement and then resets them, even in the
--- presence of exceptions.
+-- | Binds parameters to a prepared statement, and 'reset's the statement when
+-- the callback completes, even in the presence of exceptions.
+--
+-- Use 'withBind' to reuse prepared statements.  Because it 'reset's the
+-- statement /after/ each usage, it avoids a pitfall involving implicit
+-- transactions.  SQLite creates an implicit transaction if you don't say
+-- @BEGIN@ explicitly, and does not commit it until all active statements are
+-- finished with either 'reset' or 'closeStatement'.
 withBind :: (ToRow params) => Statement -> params -> IO a -> IO a
 withBind stmt params io =
   bracket (bind stmt params >> return stmt) reset (const io)
