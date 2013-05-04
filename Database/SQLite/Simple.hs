@@ -74,7 +74,7 @@ module Database.SQLite.Simple (
   ) where
 
 import           Control.Applicative
-import           Control.Exception (Exception, throw, throwIO, bracket)
+import           Control.Exception
 import           Control.Monad (void, when)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
@@ -179,8 +179,9 @@ reset (Statement stmt) = Base.reset stmt
 -- @BEGIN@ explicitly, and does not commit it until all active statements are
 -- finished with either 'reset' or 'closeStatement'.
 withBind :: (ToRow params) => Statement -> params -> IO a -> IO a
-withBind stmt params io =
-  bracket (bind stmt params >> return stmt) reset (const io)
+withBind stmt params io = do
+  bind stmt params
+  io `finally` reset stmt
 
 -- | Opens a prepared statement. A prepared statement must always be closed with
 -- a corresponding call to 'closeStatement' before closing the connection. Use
