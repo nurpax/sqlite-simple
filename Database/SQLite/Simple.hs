@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -45,6 +45,7 @@ module Database.SQLite.Simple (
   , (:.)(..)
   , Base.SQLData(..)
   , Statement
+  , ColumnIndex(..)
     -- * Connections
   , open
   , close
@@ -66,6 +67,7 @@ module Database.SQLite.Simple (
   , withStatement
   , bind
   , reset
+  , columnName
   , withBind
   , nextRow
     -- ** Exceptions
@@ -95,6 +97,10 @@ import           Database.SQLite.Simple.FromRow
 
 -- | An SQLite prepared statement.
 newtype Statement = Statement Base.Statement
+
+-- | Index of a column in a result set. Column indices start from 0.
+newtype ColumnIndex = ColumnIndex BaseD.ColumnIndex
+    deriving (Eq, Ord, Enum, Num, Real, Integral)
 
 -- | Exception thrown if a 'Query' was malformed.
 -- This may occur if the number of \'@?@\' characters in the query
@@ -128,6 +134,9 @@ close (Connection c) = Base.close c
 withConnection :: String -> (Connection -> IO a) -> IO a
 withConnection connString = bracket (open connString) close
 
+unUtf8 :: BaseD.Utf8 -> T.Text
+unUtf8 (BaseD.Utf8 bs) = TE.decodeUtf8 bs
+
 -- | <http://www.sqlite.org/c3ref/profile.html>
 --
 -- Enable/disable tracing of SQL execution.  Tracing can be disabled
@@ -138,8 +147,6 @@ withConnection connString = bracket (open connString) close
 setTrace :: Connection -> Maybe (T.Text -> IO ()) -> IO ()
 setTrace (Connection db) logger =
   BaseD.setTrace db (fmap (\lf -> lf . unUtf8) logger)
-  where
-    unUtf8 (BaseD.Utf8 bs) = TE.decodeUtf8 bs
 
 -- | Binds parameters to a prepared statement. Once 'nextRow' returns 'Nothing',
 -- the statement must be reset with the 'reset' function before it can be
@@ -169,6 +176,18 @@ bind (Statement stmt) params = do
 -- allows the statement to be reexecuted again by invoking 'nextRow'.
 reset :: Statement -> IO ()
 reset (Statement stmt) = Base.reset stmt
+
+-- | Return the name of a a particular column in the result set of a
+-- 'Statement'.  Throws an 'ArrayException' if the colum index is out
+-- of bounds.
+--
+-- <http://www.sqlite.org/c3ref/column_name.html>
+columnName :: Statement -> ColumnIndex -> IO T.Text
+columnName (Statement stmt) (ColumnIndex n) = BaseD.columnName stmt n >>= takeUtf8
+  where
+    takeUtf8 (Just s) = return $ unUtf8 s
+    takeUtf8 Nothing  =
+      throwIO (IndexOutOfBounds ("Column index " ++ show n ++ " out of bounds"))
 
 -- | Binds parameters to a prepared statement, and 'reset's the statement when
 -- the callback completes, even in the presence of exceptions.

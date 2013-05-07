@@ -4,6 +4,7 @@ module Errors (
     testErrorsColumns
   , testErrorsInvalidParams
   , testErrorsWithStatement
+  , testErrorsColumnName
   ) where
 
 import Prelude hiding (catch)
@@ -27,7 +28,12 @@ assertFormatErrorCaught action = do
 assertSQLErrorCaught :: IO a -> Assertion
 assertSQLErrorCaught action = do
   catch (action >> return False) (\(_ :: SQLError) -> return True) >>=
-    assertBool "assertErrorError exc"
+    assertBool "assertSQLError exc"
+
+assertOOBCaught :: IO a -> Assertion
+assertOOBCaught action = do
+  catch (action >> return False) (\(_ :: ArrayException) -> return True) >>=
+    assertBool "assertOOBCaught exc"
 
 testErrorsColumns :: TestEnv -> Test
 testErrorsColumns TestEnv{..} = TestCase $ do
@@ -76,3 +82,10 @@ testErrorsWithStatement TestEnv{..} = TestCase $ do
   assertSQLErrorCaught $
     withStatement conn "SELECT id, t, t1 FROM invstat" $ \_stmt ->
       assertFailure "Error not detected"
+
+testErrorsColumnName :: TestEnv -> Test
+testErrorsColumnName TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE invcolumn (id INTEGER PRIMARY KEY, t TEXT)"
+  assertOOBCaught $
+    withStatement conn "SELECT id FROM invcolumn" $ \stmt ->
+      columnName stmt (ColumnIndex (-1)) >> assertFailure "Error not detected"

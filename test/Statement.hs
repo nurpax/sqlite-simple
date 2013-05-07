@@ -38,6 +38,8 @@ testPreparedStatements TestEnv{..} = TestCase $ do
   execute_ conn "INSERT INTO ps VALUES(1, 'first result')"
   execute_ conn "INSERT INTO ps VALUES(2, 'second result')"
   withStatement conn "SELECT t FROM ps WHERE id=?" $ \stmt -> do
+    colName <- columnName stmt 0
+    colName @?= "t"
     elems <- mapM (queryOne stmt) [1 :: Int, 2]
     ["first result" :: String, "second result"] @=? elems
     where
