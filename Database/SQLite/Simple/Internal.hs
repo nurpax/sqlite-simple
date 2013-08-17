@@ -22,6 +22,7 @@ module Database.SQLite.Simple.Internal where
 
 import           Prelude hiding (catch)
 
+import           Control.Monad
 import           Control.Applicative
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8()
@@ -51,7 +52,7 @@ data Field = Field {
 newtype Row = Row { rowresult  :: [Base.SQLData] }
 
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
-   deriving ( Functor, Applicative, Alternative, Monad )
+   deriving ( Functor, Applicative, Alternative, Monad, MonadPlus )
 
 gettypename :: Base.SQLData -> ByteString
 gettypename (Base.SQLInteger _) = "INTEGER"
