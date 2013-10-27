@@ -1,5 +1,5 @@
 Name:                sqlite-simple
-Version:             0.4.3.0
+Version:             0.4.3.1
 Synopsis:            Mid-Level SQLite client library
 Description:
     Mid-level SQLite client library, based on postgresql-simple.
@@ -67,14 +67,17 @@ test-suite test
 
   hs-source-dirs: test
   main-is:        Main.hs
-  other-modules:
-    Common
-    Simple
-    Errors
-    ParamConv
-    Utf8Strings
-    TestImports
-    UserInstances
+  other-modules:  Common
+                , Debug
+                , DirectSqlite
+                , Errors
+                , Fold
+                , ParamConv
+                , Simple
+                , Statement
+                , TestImports
+                , UserInstances
+                , Utf8Strings
 
   ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
 
