@@ -10,7 +10,7 @@ module Simple (
   ) where
 
 import qualified Data.Text as T
-import Data.Time (UTCTime)
+import Data.Time (UTCTime, Day)
 import Common
 
 -- Simplest SELECT
@@ -39,6 +39,10 @@ testSimpleSelect TestEnv{..} = TestCase $ do
   assertEqual "nulls" Nothing r
   [Only r] <- query_ conn "SELECT 1" :: IO [Only (Maybe Int)]
   assertEqual "nulls" (Just 1) r
+  [Only r] <- query_ conn "SELECT 1.0" :: IO [Only Double]
+  assertEqual "doubles" 1.0 r
+  [Only r] <- query_ conn "SELECT 1.0" :: IO [Only Float]
+  assertEqual "floats" 1.0 r
 
 testSimpleParams :: TestEnv -> Test
 testSimpleParams TestEnv{..} = TestCase $ do
@@ -60,6 +64,10 @@ testSimpleParams TestEnv{..} = TestCase $ do
   assertEqual "select params" "test2" r2
   [Only i] <- query conn "SELECT ?+?" [42 :: Int, 1 :: Int] :: IO [Only Int]
   assertEqual "select int param" 43 i
+  [Only d] <- query conn "SELECT ?" [2.0 :: Double] :: IO [Only Double]
+  assertEqual "select double param" 2.0 d
+  [Only f] <- query conn "SELECT ?" [4.0 :: Float] :: IO [Only Float]
+  assertEqual "select double param" 4.0 f
 
 testSimpleTime :: TestEnv -> Test
 testSimpleTime TestEnv{..} = TestCase $ do
@@ -79,6 +87,17 @@ testSimpleTime TestEnv{..} = TestCase $ do
   rows <- query conn "SELECT * FROM time2 WHERE t = ?" (Only time) :: IO [Only UTCTime]
   assertEqual "should see one row result" 1 (length rows)
   assertEqual "UTCTime" time t
+  -- Days
+  let daystr = "2013-08-21"
+      day    = read daystr :: Day
+  [Only day'] <- query_ conn (Query (T.concat ["SELECT '", T.pack daystr, "'"]))
+  day @?= day'
+  [Only day''] <- query conn "SELECT ?" (Only day)
+  day @?= day''
+  -- database timestamp -> day conversion is treated as an error, but
+  -- try converting a timestamp to a date and see we get it back ok
+  [Only dayx] <- query_ conn "SELECT date('2013-08-21 08:00:03.256887')"
+  day @?= dayx
 
 testSimpleTimeFract :: TestEnv -> Test
 testSimpleTimeFract TestEnv{..} = TestCase $ do

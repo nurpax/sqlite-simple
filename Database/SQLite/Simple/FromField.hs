@@ -46,6 +46,7 @@ import           Data.Time.Format (parseTime)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Typeable (Typeable, typeOf)
+import           GHC.Float (double2Float)
 
 import           System.Locale (defaultTimeLocale)
 
@@ -130,6 +131,10 @@ instance FromField Double where
     fromField (Field (SQLFloat flt) _) = Ok flt
     fromField f                        = returnError ConversionFailed f "need a float"
 
+instance FromField Float where
+    fromField (Field (SQLFloat flt) _) = Ok . double2Float $ flt
+    fromField f                        = returnError ConversionFailed f "need a float"
+
 instance FromField Bool where
     fromField f@(Field (SQLInteger b) _)
       | (b == 0) || (b == 1) = Ok (b /= 0)
@@ -165,9 +170,13 @@ instance FromField UTCTime where
 
   fromField f                     = returnError ConversionFailed f "expecting SQLText column type"
 
+
 instance FromField Day where
-  fromField (Field (SQLText t) _) = Ok . read . T.unpack $ t
-  fromField f                     = returnError ConversionFailed f "expecting SQLText column type"
+  fromField f@(Field (SQLText t) _) =
+    case parseTime defaultTimeLocale "%Y-%m-%d" . T.unpack $ t of
+      Just t -> Ok t
+      Nothing -> returnError ConversionFailed f "couldn't parse Day field"
+  fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
 fieldTypename :: Field -> String
 fieldTypename = B.unpack . gettypename . result
