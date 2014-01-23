@@ -1,16 +1,22 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, DeriveDataTypeable #-}
 
 module Errors (
     testErrorsColumns
   , testErrorsInvalidParams
   , testErrorsWithStatement
   , testErrorsColumnName
+  , testErrorsFieldWithParser
   ) where
 
-import Prelude hiding (catch)
-import Control.Exception
+import           Prelude hiding (catch)
+import           Control.Applicative
+import           Control.Exception
 import qualified Data.ByteString as B
-import Data.Word
+import           Data.Word
+import qualified Data.Text as T
+import qualified Data.Text.Read as T
+import           Data.Typeable (Typeable)
+import           Database.SQLite.Simple.FromRow (fieldWithParser)
 
 import Common
 import Database.SQLite3 (SQLError)
@@ -62,6 +68,28 @@ testErrorsColumns TestEnv{..} = TestCase $ do
     (do [Only _t1] <- query_ conn "SELECT b FROM cols_bools" :: IO [Only Bool]
         return ())
 
+newtype CustomField = CustomField Double deriving (Eq, Show, Typeable)
+data FooType = FooType String CustomField deriving (Eq, Show, Typeable)
+
+customFromText :: T.Text -> Either String CustomField
+customFromText = fmap (CustomField . fst) . T.rational
+
+instance FromRow FooType where
+  fromRow = FooType <$> field <*> fieldWithParser customFromText
+
+testErrorsFieldWithParser :: TestEnv -> Test
+testErrorsFieldWithParser TestEnv{..} = TestCase $ do
+  -- fieldWithParser - type errors
+  execute_ conn "CREATE TABLE fromfield2 (t INTEGER)"
+  execute_ conn "INSERT INTO fromfield2 (t) VALUES (10)"
+  -- Parser expects to get an SQLText but gets an SQLInteger instead
+  assertResultErrorCaught $ do
+    [FooType _ (CustomField _)] <- query_ conn "SELECT 'foo',t FROM fromfield2"
+    assertFailure "Error not detected"
+  -- Parser fails to parse a 'foo' string (expecting a real number)
+  assertResultErrorCaught $ do
+    [FooType _ (CustomField _)] <- query_ conn "SELECT 'foo','foo' FROM fromfield2"
+    assertFailure "Error not detected"
 
 testErrorsInvalidParams :: TestEnv -> Test
 testErrorsInvalidParams TestEnv{..} = TestCase $ do

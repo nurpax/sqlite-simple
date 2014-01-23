@@ -22,6 +22,7 @@ module Database.SQLite.Simple.FromRow
      , RowParser
      , field
      , fieldWith
+     , fieldWithParser
      , numFieldsRemaining
      ) where
 
@@ -33,6 +34,8 @@ import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
+import           Data.Typeable (Typeable)
 
 import           Database.SQLite.Simple.FromField
 import           Database.SQLite.Simple.Internal
@@ -87,6 +90,9 @@ fieldWith fieldP = RP $ do
 
 field :: FromField a => RowParser a
 field = fieldWith fromField
+
+fieldWithParser :: Typeable a => (T.Text -> Either String a) -> RowParser a
+fieldWithParser p = fieldWith (fieldParseText p)
 
 ellipsis :: Base.SQLData -> ByteString
 ellipsis sql

@@ -32,6 +32,7 @@ module Database.SQLite.Simple.FromField
     , ResultError(..)
     , Field
     , fieldData
+    , fieldParseText
     , returnError
     ) where
 
@@ -186,6 +187,15 @@ fieldTypename = B.unpack . gettypename . result
 -- associated with a field being parsed.
 fieldData :: Field -> SQLData
 fieldData = result
+
+fieldParseText :: Typeable a => (T.Text -> Either String a) -> Field -> Ok a
+fieldParseText parse f =
+  case f of
+    Field (SQLText t) _ ->
+      case parse t of
+        Left e  -> returnError ConversionFailed f ("User defined parser in fieldParseText failed: " ++ e)
+        Right v -> Ok v
+    _ -> returnError ConversionFailed f "expecting SQLText for fieldParseText"
 
 -- | Given one of the constructors from 'ResultError',  the field,
 --   and an 'errMessage',  this fills in the other fields in the

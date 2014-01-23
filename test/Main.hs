@@ -32,6 +32,7 @@ tests =
     , TestLabel "Errors"    . testErrorsInvalidParams
     , TestLabel "Errors"    . testErrorsWithStatement
     , TestLabel "Errors"    . testErrorsColumnName
+    , TestLabel "Errors"    . testErrorsFieldWithParser
     , TestLabel "Utf8"      . testUtf8Simplest
     , TestLabel "Utf8"      . testBlobs
     , TestLabel "Instances" . testUserFromField
