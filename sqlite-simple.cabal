@@ -36,9 +36,14 @@ Library
      Database.SQLite.Simple.ToField
      Database.SQLite.Simple.ToRow
      Database.SQLite.Simple.Types
+     Database.SQLite.Simple.Time
+     Database.SQLite.Simple.Time.Implementation
 
   Build-depends:
+    attoparsec >= 0.10.3,
     base < 5,
+    blaze-builder,
+    blaze-textual,
     bytestring >= 0.9,
     containers,
     direct-sqlite >= 2.3.4 && < 2.4,
@@ -89,7 +94,7 @@ test-suite test
 
   build-depends: base
                , base16-bytestring
-               , bytestring
+               , bytestring >= 0.9
                , HUnit
                , sqlite-simple
                , direct-sqlite

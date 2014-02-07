@@ -43,11 +43,6 @@
 -- in their offset.  Most notably, this includes all of India and parts of
 -- Canada and Australia.
 --
--- PostgreSQL uses the zoneinfo database for its time zone information.
--- You can read more about PostgreSQL's date and time types at
--- <http://www.postgresql.org/docs/9.1/static/datatype-datetime.html>,
--- and zoneinfo at <http://en.wikipedia.org/wiki/Tz_database>.
---
 ------------------------------------------------------------------------------
 
 module Database.SQLite.Simple.Time

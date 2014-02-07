@@ -54,6 +54,7 @@ import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
+import           Database.SQLite.Simple.Time (parseUTCTime)
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.
@@ -164,11 +165,11 @@ instance FromField LB.ByteString where
 
 instance FromField UTCTime where
   fromField f@(Field (SQLText t) _) =
-    case parseTime defaultTimeLocale "%F %X%Q" . T.unpack $ t of
-      Just t -> Ok t
-      Nothing -> returnError ConversionFailed f "couldn't parse UTCTime field"
+    case parseUTCTime t of
+      Right t -> Ok t
+      Left e -> returnError ConversionFailed f ("couldn't parse UTCTime field: " ++ e)
 
-  fromField f                     = returnError ConversionFailed f "expecting SQLText column type"
+  fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
 
 instance FromField Day where

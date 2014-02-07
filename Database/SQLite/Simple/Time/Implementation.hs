@@ -1,6 +1,7 @@
 ------------------------------------------------------------------------------
 -- |
 -- Copyright:   (c) 2012 Leon P Smith
+--              (c) 2014 Janne Hellsten
 -- License:     BSD3
 -- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
 -- Stability:   experimental
@@ -11,21 +12,21 @@
 
 module Database.SQLite.Simple.Time.Implementation where
 
-import           Blaze.ByteString.Builder(Builder, fromByteString)
-import           Blaze.ByteString.Builder.Char8(fromChar)
-import           Blaze.Text.Int(integral)
+import           Blaze.ByteString.Builder (Builder, fromByteString)
+import           Blaze.ByteString.Builder.Char8 (fromChar)
+import           Blaze.Text.Int (integral)
 import           Control.Applicative
-import           Control.Arrow((***))
-import           Control.Monad(when)
-import qualified Data.Attoparsec.Char8 as A
-import           Data.Bits((.&.))
-import qualified Data.ByteString as B
-import           Data.ByteString.Internal (c2w, w2c)
+import           Control.Arrow ((***))
+import           Control.Monad (when)
+import qualified Data.Attoparsec.Text as A
+import           Data.Bits ((.&.))
+import           Data.ByteString.Internal (w2c)
+import           Data.Char (isDigit, ord)
 import           Data.Fixed (Pico)
-import           Data.Monoid(Monoid(..))
+import           Data.Monoid (Monoid(..))
+import qualified Data.Text as T
 import           Data.Time hiding (getTimeZone, getZonedTime)
 import           Data.Typeable
-import           Data.Word(Word8)
 import           Prelude hiding (take, (++))
 import           Unsafe.Coerce
 
@@ -57,31 +58,31 @@ type UTCTimestamp   = Unbounded UTCTime
 type ZonedTimestamp = Unbounded ZonedTime
 type Date           = Unbounded Day
 
-parseUTCTime   :: B.ByteString -> Either String UTCTime
+parseUTCTime   :: T.Text -> Either String UTCTime
 parseUTCTime   = A.parseOnly (getUTCTime <* A.endOfInput)
 
-parseZonedTime :: B.ByteString -> Either String ZonedTime
+parseZonedTime :: T.Text -> Either String ZonedTime
 parseZonedTime = A.parseOnly (getZonedTime <* A.endOfInput)
 
-parseLocalTime :: B.ByteString -> Either String LocalTime
+parseLocalTime :: T.Text -> Either String LocalTime
 parseLocalTime = A.parseOnly (getLocalTime <* A.endOfInput)
 
-parseDay :: B.ByteString -> Either String Day
+parseDay :: T.Text -> Either String Day
 parseDay = A.parseOnly (getDay <* A.endOfInput)
 
-parseTimeOfDay :: B.ByteString -> Either String TimeOfDay
+parseTimeOfDay :: T.Text -> Either String TimeOfDay
 parseTimeOfDay = A.parseOnly (getTimeOfDay <* A.endOfInput)
 
-parseUTCTimestamp   :: B.ByteString -> Either String UTCTimestamp
+parseUTCTimestamp   :: T.Text -> Either String UTCTimestamp
 parseUTCTimestamp   = A.parseOnly (getUTCTimestamp <* A.endOfInput)
 
-parseZonedTimestamp :: B.ByteString -> Either String ZonedTimestamp
+parseZonedTimestamp :: T.Text -> Either String ZonedTimestamp
 parseZonedTimestamp = A.parseOnly (getZonedTimestamp <* A.endOfInput)
 
-parseLocalTimestamp :: B.ByteString -> Either String LocalTimestamp
+parseLocalTimestamp :: T.Text -> Either String LocalTimestamp
 parseLocalTimestamp = A.parseOnly (getLocalTimestamp <* A.endOfInput)
 
-parseDate :: B.ByteString -> Either String Date
+parseDate :: T.Text -> Either String Date
 parseDate = A.parseOnly (getDate <* A.endOfInput)
 
 getUnbounded :: A.Parser a -> A.Parser (Unbounded a)
@@ -92,8 +93,8 @@ getUnbounded getFinite
 
 getDay :: A.Parser Day
 getDay = do
-    yearStr <- A.takeWhile A.isDigit
-    when (B.length yearStr < 4) (fail "year must consist of at least 4 digits")
+    yearStr <- A.takeWhile isDigit
+    when (T.length yearStr < 4) (fail "year must consist of at least 4 digits")
 
     let !year = toNum yearStr
     _       <- A.char '-'
@@ -108,8 +109,8 @@ getDay = do
 getDate :: A.Parser Date
 getDate = getUnbounded getDay
 
-decimal :: Fractional a => B.ByteString -> a
-decimal str = toNum str / 10^(B.length str)
+decimal :: Fractional a => T.Text -> a
+decimal str = toNum str / 10^(T.length str)
 {-# INLINE decimal #-}
 
 getTimeOfDay :: A.Parser TimeOfDay
@@ -119,7 +120,7 @@ getTimeOfDay = do
     minute <- digits "minutes"
     _      <- A.char ':'
     second <- digits "seconds"
-    subsec <- (A.char '.' *> (decimal <$> A.takeWhile1 A.isDigit)) <|> return 0
+    subsec <- (A.char '.' *> (decimal <$> A.takeWhile1 isDigit)) <|> return 0
 
     let !picos' = second + subsec
 
@@ -162,20 +163,20 @@ getUTCTime = do
 getUTCTimestamp :: A.Parser UTCTimestamp
 getUTCTimestamp = getUnbounded getUTCTime
 
-toNum :: Num n => B.ByteString -> n
-toNum = B.foldl' (\a c -> 10*a + digit c) 0
+toNum :: Num n => T.Text -> n
+toNum = T.foldl' (\a c -> 10*a + digit c) 0
 {-# INLINE toNum #-}
 
-digit :: Num n => Word8 -> n
-digit c = fromIntegral (c .&. 0x0f)
+digit :: Num n => Char -> n
+digit c = fromIntegral (ord c .&. 0x0f)
 {-# INLINE digit #-}
 
 digits :: Num n => String -> A.Parser n
 digits msg = do
   x <- A.anyChar
   y <- A.anyChar
-  if A.isDigit x && A.isDigit y
-  then return $! (10 * digit (c2w x) + digit (c2w y))
+  if isDigit x && isDigit y
+  then return $! (10 * digit x + digit y)
   else fail (msg ++ " is not 2 digits")
 {-# INLINE digits #-}
 
