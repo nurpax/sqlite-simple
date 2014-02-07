@@ -6,6 +6,9 @@
 -- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
 -- Stability:   experimental
 --
+-- Adapted from Leon P Smith's code for SQLite.
+--
+-- See http://sqlite.org/lang_datefunc.html for date formats used in SQLite.
 ------------------------------------------------------------------------------
 
 {-# LANGUAGE DeriveDataTypeable #-}
@@ -118,15 +121,20 @@ getTimeOfDay = do
     hour   <- digits "hours"
     _      <- A.char ':'
     minute <- digits "minutes"
-    _      <- A.char ':'
-    second <- digits "seconds"
-    subsec <- (A.char '.' *> (decimal <$> A.takeWhile1 isDigit)) <|> return 0
+    -- Allow omission of seconds.  If seconds is omitted, don't try to
+    -- parse the sub-second part.
+    (sec,subsec)
+           <- ((,) <$> (A.char ':' *> digits "seconds") <*> fract) <|> pure (0,0)
 
-    let !picos' = second + subsec
+    let !picos' = sec + subsec
 
     case makeTimeOfDayValid hour minute picos' of
       Nothing -> fail "invalid time of day"
       Just x  -> return $! x
+
+    where
+      fract =
+        (A.char '.' *> (decimal <$> A.takeWhile1 isDigit)) <|> pure 0
 
 getLocalTime :: A.Parser LocalTime
 getLocalTime = LocalTime <$> getDay <*> (A.char ' ' *> getTimeOfDay)
@@ -152,9 +160,11 @@ getZonedTimestamp = getUnbounded getZonedTime
 getUTCTime :: A.Parser UTCTime
 getUTCTime = do
     day  <- getDay
-    _    <- A.char ' '
+    _    <- A.char ' ' <|> A.char 'T'
     time <- getTimeOfDay
-    zone <- getTimeZone
+    -- SQLite doesn't require a timezone postfix.  So make that
+    -- optional and default to +0.  'Z' means UTC (zulu time).
+    zone <- getTimeZone <|> (A.char 'Z' *> pure utc) <|> (pure utc)
     let (!dayDelta,!time') = localToUTCTimeOfDay zone time
     let !day' = addDays dayDelta day
     let !time'' = timeOfDayToTime time'
