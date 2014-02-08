@@ -8,6 +8,8 @@ module Simple (
   , testSimpleTimeFract
   , testSimpleInsertId
   , testSimpleUTCTime
+  , testSimpleUTCTimeTZ
+  , testSimpleUTCTimeParams
   ) where
 
 import qualified Data.Text as T
@@ -156,3 +158,40 @@ testSimpleUTCTime TestEnv{..} = TestCase $ do
     makeReadable s =
       let s' = if T.length s < T.length "YYYY-MM-DD HH:MM:SS" then T.append s ":00" else s
       in T.unpack . T.replace "T" " " $ s'
+
+testSimpleUTCTimeTZ :: TestEnv -> Test
+testSimpleUTCTimeTZ TestEnv{..} = TestCase $ do
+  -- Time formats understood by sqlite: http://sqlite.org/lang_datefunc.html
+  let timestrs = [ "2013-02-03 13:00:00-02:00"
+                 , "2013-02-03 13:00:00-01:00"
+                 , "2013-02-03 13:00:00-03:00"
+                 , "2013-02-03 13:00:00Z"
+                 , "2013-02-03 13:00:00+00:00"
+                 , "2013-02-03 13:00:00+03:00"
+                 , "2013-02-03 13:00:00+02:00"
+                 , "2013-02-03 13:00:00+04:00"
+                 ]
+  execute_ conn "CREATE TABLE utctimestz (t TIMESTAMP)"
+  mapM_ (\t -> execute conn "INSERT INTO utctimestz (t) VALUES (?)" (Only t)) timestrs
+  dates <- query_ conn "SELECT t from utctimestz" :: IO [Only UTCTime]
+  mapM_ matchDates (zip (timestrs) dates)
+  where
+    matchDates (str,(Only date)) = do
+      -- Remove 'T' when reading in to Haskell
+      let t = read . T.unpack $ str :: UTCTime
+      t @=? date
+
+testSimpleUTCTimeParams :: TestEnv -> Test
+testSimpleUTCTimeParams TestEnv{..} = TestCase $ do
+  let times = [ "2012-08-17 08:00:03"
+              , "2012-08-17 08:00:03.2"
+              , "2012-08-17 08:00:03.256"
+              , "2012-08-17 08:00:03.4192"
+              ]
+  -- Try inserting timestamp directly as a string
+  mapM_ assertResult times
+  where
+    assertResult tstr = do
+      let utct = read . T.unpack $ tstr :: UTCTime
+      [Only t] <- query conn "SELECT ?" (Only utct) :: IO [Only T.Text]
+      assertEqual "UTCTime" tstr t
