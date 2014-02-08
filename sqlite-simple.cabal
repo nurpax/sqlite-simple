@@ -49,7 +49,6 @@ Library
     direct-sqlite >= 2.3.4 && < 2.4,
     text >= 0.11,
     time,
-    old-locale >= 1.0.0.0,
     transformers
 
   default-extensions:

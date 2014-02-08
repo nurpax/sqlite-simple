@@ -19,19 +19,20 @@
 
 module Database.SQLite.Simple.ToField (ToField(..)) where
 
+import           Blaze.ByteString.Builder (toByteString)
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Encoding as T
 import           Data.Time (Day, UTCTime)
-import           Data.Time.Format (formatTime)
 import           Data.Word (Word, Word8, Word16, Word32, Word64)
 import           GHC.Float
-import           System.Locale (defaultTimeLocale)
 
 import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types (Null)
+import           Database.SQLite.Simple.Time
 
 -- | A type that may be used as a single parameter to a SQL query.
 class ToField a where
@@ -129,11 +130,11 @@ instance ToField LT.Text where
     {-# INLINE toField #-}
 
 instance ToField UTCTime where
-    toField = SQLText . T.pack . formatTime defaultTimeLocale "%F %X%Q"
+    toField = SQLText . T.decodeUtf8 . toByteString . utcTimeToBuilder
     {-# INLINE toField #-}
 
 instance ToField Day where
-    toField = SQLText . T.pack . show
+    toField = SQLText . T.decodeUtf8 . toByteString . dayToBuilder
     {-# INLINE toField #-}
 
 -- TODO enable these

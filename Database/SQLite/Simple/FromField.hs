@@ -42,19 +42,16 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int16, Int32, Int64)
 import           Data.Time (UTCTime, Day)
-import           Data.Time.Format (parseTime)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Typeable (Typeable, typeOf)
 import           GHC.Float (double2Float)
 
-import           System.Locale (defaultTimeLocale)
-
 import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
-import           Database.SQLite.Simple.Time (parseUTCTime)
+import           Database.SQLite.Simple.Time
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.
@@ -174,9 +171,10 @@ instance FromField UTCTime where
 
 instance FromField Day where
   fromField f@(Field (SQLText t) _) =
-    case parseTime defaultTimeLocale "%Y-%m-%d" . T.unpack $ t of
-      Just t -> Ok t
-      Nothing -> returnError ConversionFailed f "couldn't parse Day field"
+    case parseDay t of
+      Right t -> Ok t
+      Left e -> returnError ConversionFailed f ("couldn't parse Day field: " ++ e)
+
   fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
 fieldTypename :: Field -> String

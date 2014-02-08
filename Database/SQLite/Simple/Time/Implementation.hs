@@ -13,7 +13,7 @@
 
 module Database.SQLite.Simple.Time.Implementation where
 
-import           Blaze.ByteString.Builder (Builder, fromByteString)
+import           Blaze.ByteString.Builder (Builder)
 import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Blaze.Text.Int (integral)
 import           Control.Applicative
@@ -137,18 +137,12 @@ timeZoneToBuilder tz
     sign h | h >= 0    = fromChar '+'
            | otherwise = fromChar '-'
 
+-- | Output YYYY-MM-DD HH:MM:SS with an optional .SSS fraction part.
+-- Explicit timezone attribute is not appended as per SQLite3's
+-- datetime conventions.
 utcTimeToBuilder :: UTCTime -> Builder
 utcTimeToBuilder (UTCTime day time) =
-    dayToBuilder day ++ fromChar ' '
-    ++ timeOfDayToBuilder (timeToTimeOfDay time) ++ fromByteString "+00"
-
-zonedTimeToBuilder :: ZonedTime -> Builder
-zonedTimeToBuilder (ZonedTime localTime tz) =
-    localTimeToBuilder localTime ++ timeZoneToBuilder tz
-
-localTimeToBuilder :: LocalTime -> Builder
-localTimeToBuilder (LocalTime day tod) =
-    dayToBuilder day ++ fromChar ' ' ++ timeOfDayToBuilder tod
+    dayToBuilder day ++ fromChar ' ' ++ timeOfDayToBuilder (timeToTimeOfDay time)
 
 showSeconds :: Pico -> Builder
 showSeconds xyz
