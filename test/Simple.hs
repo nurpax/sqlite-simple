@@ -7,6 +7,7 @@ module Simple (
   , testSimpleTime
   , testSimpleTimeFract
   , testSimpleInsertId
+  , testSimpleUTCTime
   ) where
 
 import qualified Data.Text as T
@@ -126,3 +127,32 @@ testSimpleInsertId TestEnv{..} = TestCase $ do
   (Only "test string") @=? (head rows)
   [Only row] <- query conn "SELECT t FROM test_row_id WHERE id = ?" (Only (2 :: Int)) :: IO [Only String]
   "test2" @=? row
+
+testSimpleUTCTime :: TestEnv -> Test
+testSimpleUTCTime TestEnv{..} = TestCase $ do
+  -- Time formats understood by sqlite: http://sqlite.org/lang_datefunc.html
+  let timestrs = [ "2012-08-17 13:25"
+                 , "2012-08-17 13:25:44"
+                 , "2012-08-17 13:25:44.123"
+                 ]
+      timestrsWithT = map (T.map (\c -> if c == ' ' then 'T' else c)) timestrs
+  execute_ conn "CREATE TABLE utctimes (t TIMESTAMP)"
+  mapM_ (\t -> execute conn "INSERT INTO utctimes (t) VALUES (?)" (Only t)) timestrs
+  mapM_ (\t -> execute conn "INSERT INTO utctimes (t) VALUES (?)" (Only t)) timestrsWithT
+  dates <- query_ conn "SELECT t from utctimes" :: IO [Only UTCTime]
+  mapM_ matchDates (zip (timestrs ++ timestrsWithT) dates)
+  let zulu = "2012-08-17 13:25"
+  [d] <- query conn "SELECT ?" (Only (T.append zulu "Z"))
+  matchDates (zulu, d)
+  let zulu = "2012-08-17 13:25:00"
+  [d] <- query conn "SELECT ?" (Only (T.append zulu "Z"))
+  matchDates (zulu, d)
+  where
+    matchDates (str,(Only date)) = do
+      -- Remove 'T' when reading in to Haskell
+      let t = read (makeReadable str) :: UTCTime
+      t @=? date
+
+    makeReadable s =
+      let s' = if T.length s < T.length "YYYY-MM-DD HH:MM:SS" then T.append s ":00" else s
+      in T.unpack . T.replace "T" " " $ s'
