@@ -11,15 +11,12 @@
 -- See http://sqlite.org/lang_datefunc.html for date formats used in SQLite.
 ------------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveDataTypeable #-}
-
 module Database.SQLite.Simple.Time.Implementation where
 
 import           Blaze.ByteString.Builder (Builder, fromByteString)
 import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Blaze.Text.Int (integral)
 import           Control.Applicative
-import           Control.Arrow ((***))
 import           Control.Monad (when)
 import qualified Data.Attoparsec.Text as A
 import           Data.Bits ((.&.))
@@ -29,7 +26,6 @@ import           Data.Fixed (Pico)
 import           Data.Monoid (Monoid(..))
 import qualified Data.Text as T
 import           Data.Time hiding (getTimeZone, getZonedTime)
-import           Data.Typeable
 import           Prelude hiding (take, (++))
 import           Unsafe.Coerce
 
@@ -37,62 +33,11 @@ import           Unsafe.Coerce
 (++) = mappend
 infixr 5 ++
 
-data Unbounded a
-   = NegInfinity
-   | Finite !a
-   | PosInfinity
-     deriving (Eq, Ord, Typeable)
-
-instance Show a => Show (Unbounded a) where
-  showsPrec prec x rest
-    = case x of
-        NegInfinity -> "-infinity" ++ rest
-        Finite time -> showsPrec prec time rest
-        PosInfinity ->  "infinity" ++ rest
-
-instance Read a => Read (Unbounded a) where
-  readsPrec prec = readParen False $ \str -> case str of
-    ('-':'i':'n':'f':'i':'n':'i':'t':'y':xs)  -> [(NegInfinity,xs)]
-    (    'i':'n':'f':'i':'n':'i':'t':'y':xs)  -> [(PosInfinity,xs)]
-    xs -> map (Finite *** id) (readsPrec prec xs)
-
-type LocalTimestamp = Unbounded LocalTime
-type UTCTimestamp   = Unbounded UTCTime
-type ZonedTimestamp = Unbounded ZonedTime
-type Date           = Unbounded Day
-
 parseUTCTime   :: T.Text -> Either String UTCTime
 parseUTCTime   = A.parseOnly (getUTCTime <* A.endOfInput)
 
-parseZonedTime :: T.Text -> Either String ZonedTime
-parseZonedTime = A.parseOnly (getZonedTime <* A.endOfInput)
-
-parseLocalTime :: T.Text -> Either String LocalTime
-parseLocalTime = A.parseOnly (getLocalTime <* A.endOfInput)
-
 parseDay :: T.Text -> Either String Day
 parseDay = A.parseOnly (getDay <* A.endOfInput)
-
-parseTimeOfDay :: T.Text -> Either String TimeOfDay
-parseTimeOfDay = A.parseOnly (getTimeOfDay <* A.endOfInput)
-
-parseUTCTimestamp   :: T.Text -> Either String UTCTimestamp
-parseUTCTimestamp   = A.parseOnly (getUTCTimestamp <* A.endOfInput)
-
-parseZonedTimestamp :: T.Text -> Either String ZonedTimestamp
-parseZonedTimestamp = A.parseOnly (getZonedTimestamp <* A.endOfInput)
-
-parseLocalTimestamp :: T.Text -> Either String LocalTimestamp
-parseLocalTimestamp = A.parseOnly (getLocalTimestamp <* A.endOfInput)
-
-parseDate :: T.Text -> Either String Date
-parseDate = A.parseOnly (getDate <* A.endOfInput)
-
-getUnbounded :: A.Parser a -> A.Parser (Unbounded a)
-getUnbounded getFinite
-    =     (pure NegInfinity <* A.string "-infinity")
-      <|> (pure PosInfinity <* A.string  "infinity")
-      <|> (Finite <$> getFinite)
 
 getDay :: A.Parser Day
 getDay = do
@@ -108,9 +53,6 @@ getDay = do
     case fromGregorianValid year month day of
       Nothing -> fail "invalid date"
       Just x  -> return $! x
-
-getDate :: A.Parser Date
-getDate = getUnbounded getDay
 
 decimal :: Fractional a => T.Text -> a
 decimal str = toNum str / 10^(T.length str)
@@ -139,9 +81,6 @@ getTimeOfDay = do
 getLocalTime :: A.Parser LocalTime
 getLocalTime = LocalTime <$> getDay <*> (A.char ' ' *> getTimeOfDay)
 
-getLocalTimestamp :: A.Parser LocalTimestamp
-getLocalTimestamp = getUnbounded getLocalTime
-
 getTimeZone :: A.Parser TimeZone
 getTimeZone = do
     sign  <- A.satisfy (\c -> c == '+' || c == '-')
@@ -150,12 +89,6 @@ getTimeZone = do
     let !absset = 60 * hours + mins
         !offset = if sign == '+' then absset else -absset
     return $! minutesToTimeZone offset
-
-getZonedTime :: A.Parser ZonedTime
-getZonedTime = ZonedTime <$> getLocalTime <*> getTimeZone
-
-getZonedTimestamp :: A.Parser ZonedTimestamp
-getZonedTimestamp = getUnbounded getZonedTime
 
 getUTCTime :: A.Parser UTCTime
 getUTCTime = do
@@ -169,9 +102,6 @@ getUTCTime = do
     let !day' = addDays dayDelta day
     let !time'' = timeOfDayToTime time'
     return (UTCTime day' time'')
-
-getUTCTimestamp :: A.Parser UTCTimestamp
-getUTCTimestamp = getUnbounded getUTCTime
 
 toNum :: Num n => T.Text -> n
 toNum = T.foldl' (\a c -> 10*a + digit c) 0
@@ -219,25 +149,6 @@ zonedTimeToBuilder (ZonedTime localTime tz) =
 localTimeToBuilder :: LocalTime -> Builder
 localTimeToBuilder (LocalTime day tod) =
     dayToBuilder day ++ fromChar ' ' ++ timeOfDayToBuilder tod
-
-unboundedToBuilder :: (a -> Builder) -> (Unbounded a -> Builder)
-unboundedToBuilder finiteToBuilder unbounded
-    = case unbounded of
-        NegInfinity -> fromByteString "-infinity"
-        Finite a    -> finiteToBuilder a
-        PosInfinity -> fromByteString  "infinity"
-
-utcTimestampToBuilder :: UTCTimestamp -> Builder
-utcTimestampToBuilder = unboundedToBuilder utcTimeToBuilder
-
-zonedTimestampToBuilder :: ZonedTimestamp -> Builder
-zonedTimestampToBuilder = unboundedToBuilder zonedTimeToBuilder
-
-localTimestampToBuilder :: LocalTimestamp -> Builder
-localTimestampToBuilder = unboundedToBuilder localTimeToBuilder
-
-dateToBuilder  :: Date -> Builder
-dateToBuilder  = unboundedToBuilder dayToBuilder
 
 showSeconds :: Pico -> Builder
 showSeconds xyz

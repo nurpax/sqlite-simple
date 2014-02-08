@@ -46,31 +46,12 @@
 ------------------------------------------------------------------------------
 
 module Database.SQLite.Simple.Time
-     ( Unbounded(..)
-     , Date
-     , UTCTimestamp
-     , ZonedTimestamp
-     , LocalTimestamp
-     , parseDay
+     ( parseDay
      , parseUTCTime
-     , parseZonedTime
-     , parseLocalTime
-     , parseTimeOfDay
-     , parseDate
-     , parseUTCTimestamp
-     , parseZonedTimestamp
-     , parseLocalTimestamp
      , dayToBuilder
      , utcTimeToBuilder
-     , zonedTimeToBuilder
-     , localTimeToBuilder
      , timeOfDayToBuilder
      , timeZoneToBuilder
-     , dateToBuilder
-     , utcTimestampToBuilder
-     , zonedTimestampToBuilder
-     , localTimestampToBuilder
-     , unboundedToBuilder
      ) where
 
 import Database.SQLite.Simple.Time.Implementation
