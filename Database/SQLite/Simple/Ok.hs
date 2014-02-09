@@ -8,7 +8,6 @@
 --             (c) 2012-2013 Janne Hellsten
 -- License:    BSD3
 -- Maintainer: Janne Hellsten <jjhellst@gmail.com>
--- Stability:  experimental
 --
 -- The 'Ok' type is a simple error handler,  basically equivalent to
 -- @Either [SomeException]@.

@@ -8,7 +8,6 @@
 --              (c) 2012-2013 Janne Hellsten
 -- License:     BSD3
 -- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
--- Stability:   experimental
 -- Portability: portable
 --
 -- Top-level module for sqlite-simple.

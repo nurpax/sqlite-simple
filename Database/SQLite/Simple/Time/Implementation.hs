@@ -1,18 +1,24 @@
 ------------------------------------------------------------------------------
 -- |
+-- Module:      Database.SQLite.Simple.Time.Implementation
 -- Copyright:   (c) 2012 Leon P Smith
---              (c) 2014 Janne Hellsten
+--              (c) 2012-2014 Janne Hellsten
 -- License:     BSD3
 -- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
--- Stability:   experimental
 --
 -- Adapted from Leon P Smith's code for SQLite.
 --
--- See http://sqlite.org/lang_datefunc.html for date formats used in SQLite.
+-- See <http://sqlite.org/lang_datefunc.html> for date formats used in SQLite.
 ------------------------------------------------------------------------------
 
-module Database.SQLite.Simple.Time.Implementation where
-
+module Database.SQLite.Simple.Time.Implementation (
+    parseUTCTime
+  , parseDay
+  , utcTimeToBuilder
+  , dayToBuilder
+  , timeOfDayToBuilder
+  , timeZoneToBuilder
+  ) where
 import           Blaze.ByteString.Builder (Builder)
 import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Blaze.Text.Int (integral)
@@ -77,9 +83,6 @@ getTimeOfDay = do
     where
       fract =
         (A.char '.' *> (decimal <$> A.takeWhile1 isDigit)) <|> pure 0
-
-getLocalTime :: A.Parser LocalTime
-getLocalTime = LocalTime <$> getDay <*> (A.char ' ' *> getTimeOfDay)
 
 getTimeZone :: A.Parser TimeZone
 getTimeZone = do

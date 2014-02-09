@@ -2,56 +2,20 @@
 -- |
 -- Module:      Database.SQLite.Simple.Time
 -- Copyright:   (c) 2012 Leon P Smith
---              (c) 2012-2013 Janne Hellsten
+--              (c) 2012-2014 Janne Hellsten
 -- License:     BSD3
 -- Maintainer:  Janne Hellsten <jjhellst@gmail.com>
--- Stability:   experimental
 --
--- Time types that supports positive and negative infinity.   Also includes
--- new time parsers and printers with better performance than GHC's time
--- package.
+-- Conversions to/from Haskell 'UTCTime' and 'Day' types for SQLite3.
+-- Offers better performance than direct use of time package's
+-- 'read'/'show' functionality.
 --
--- The parsers only understand the specific variant of ISO 8601 that
--- PostgreSQL emits,  and the printers attempt to duplicate this syntax.
--- Thus the @datestyle@ parameter for the connection must be set to @ISO@.
---
--- These parsers and printers likely have problems and shortcomings.  Some
--- that I know of:
---
--- 1  @TimestampTZ@s before a timezone-dependent point in time cannot be
---    parsed,  because the parsers can only handle timezone offsets of a
---    integer number of minutes.  However, PostgreSQL will include seconds
---    in the offset, depending on the historical time standards for the city
---    identifying the time zone.
---
---    This boundary point often marks an event of some interest.  In the US
---    for example,  @timestamptz@s before @1883-Nov-18 12:00:00@ local time
---    cannot be parsed.  This is the moment Standard Railway Time went live.
---    Concretely, PostgreSQL will emit @1883-11-18 12:03:57-04:56:02@
---    instead of @1883-11-18 11:59:59-05@ when the @timezone@ parameter
---    for the connection is set to @America/New_York@.
---
--- 2. Dates and times surrounding @1582-Feb-24@,  the date the Gregorian
---    Calendar was introduced,  should be investigated for conversion errors.
---
--- 3. Points in time Before Christ are not also not supported.  For example,
---    PostgreSQL will emit @0045-01-01 BC@ for a value of a @date@ type.
---    This is the year that the Julian Calendar was adopted.
---
--- However, it should be noted that the old parsers also had issues 1 and 3.
--- Also, the new parsers now correctly handle time zones that include minutes
--- in their offset.  Most notably, this includes all of India and parts of
--- Canada and Australia.
---
+-- The parsers are heavily adapted for the specific variant of ISO 8601 that
+-- SQLite uses,  and the printers attempt to duplicate this syntax.
 ------------------------------------------------------------------------------
 
-module Database.SQLite.Simple.Time
-     ( parseDay
-     , parseUTCTime
-     , dayToBuilder
-     , utcTimeToBuilder
-     , timeOfDayToBuilder
-     , timeZoneToBuilder
-     ) where
+module Database.SQLite.Simple.Time (
+    module Database.SQLite.Simple.Time.Implementation
+  ) where
 
 import Database.SQLite.Simple.Time.Implementation
