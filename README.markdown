@@ -10,9 +10,16 @@ The API has been modeled directly after
 in turn borrows from
 [mysql-simple](https://github.com/bos/mysql-simple).
 
-The library has been fairly well unit tested.  It's also been benchmarked using
-[db-bench](https://github.com/nurpax/db-bench) which is a performance comparison suite 
-for measuring database access overhead when using the various Haskell database libraries.
+[The sqlite-simple API
+reference](https://hackage.haskell.org/package/sqlite-simple/docs/Database-SQLite-Simple.html)
+contains more examples of use and information on its features.
+
+The library is well tested and stable.  The library should also be
+reasonably performant.  You can find its benchmark suite here:
+[db-bench](https://github.com/nurpax/db-bench).  You can read more
+about sqlite-simple's expected performance in [my blog that compares
+various Haskell database
+libraries](http://nurpax.github.io/posts/2013-08-17-sqlite-simple-benchmarking.html).
 
 [![Build Status](https://secure.travis-ci.org/nurpax/sqlite-simple.png)](http://travis-ci.org/nurpax/sqlite-simple)
 
@@ -84,7 +91,7 @@ list](http://www.haskell.org/mailman/listinfo/database-devel).
 
 ### Contributing
 
-If you send pull requests for new features, it'd be great if you could also develop unit 
+If you send pull requests for new features, it'd be great if you could also develop unit
 tests for any such features.
 
 
