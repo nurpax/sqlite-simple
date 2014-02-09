@@ -1,0 +1,12 @@
+0.4.5.0
+
+	* Various improvements to documentation.  Especially UTCTime parsing and printing, 
+	  and how it relates to SQLite datetimes is better documented now.
+
+	* Improved date/time parsing performance by adapting Leon P. Smith's parsers
+	  from postgresql-simple for SQLite.  UTCTime handling is also better defined 
+	  now.
+	  
+	* Improved query performance (https://github.com/nurpax/sqlite-simple/issues/23)
+
+  * Improved tests for all areas touched by the above change.
