@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, GeneralizedNewtypeDeriving, ScopedTypeVariables #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -332,19 +332,31 @@ nextRow (Statement stmt) = do
 
 convertRow :: (FromRow r) => [Base.SQLData] -> Int -> IO r
 convertRow rowRes ncols = do
-  let rw = Row rowRes
-  case runStateT (runReaderT (unRP fromRow) rw) 0 of
-    Ok (val,col) | col == ncols -> return val
-                 | otherwise -> do
-                     let vals = map (\f -> (gettypename f, f)) rowRes
-                     throwIO (ConversionFailed
-                       (show ncols ++ " values: " ++ show vals)
-                       (show col ++ " slots in target type")
-                       "mismatch between number of columns to \
-                       \convert and number in target type")
+  let rw = RowParseRO ncols
+  case runStateT (runReaderT (unRP fromRow) rw) (0, rowRes) of
+    Ok (val,(col,_))
+       | col == ncols -> return val
+       | otherwise -> errorColumnMismatch (ColumnOutOfBounds col)
     Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
-    Errors [x] -> throwIO x
+    Errors [x] ->
+      throw x `catch` (\e -> errorColumnMismatch (e :: ColumnOutOfBounds))
     Errors xs  -> throwIO $ ManyErrors xs
+  where
+    errorColumnMismatch :: ColumnOutOfBounds -> IO r
+    errorColumnMismatch (ColumnOutOfBounds c) = do
+      let vals = map (\f -> (gettypename f, ellipsis f)) rowRes
+      throwIO (ConversionFailed
+               (show ncols ++ " values: " ++ show vals)
+               ("at least " ++ show c ++ " slots in target type")
+               "mismatch between number of columns to convert and number in target type")
+
+    ellipsis :: Base.SQLData -> T.Text
+    ellipsis sql
+      | T.length bs > 20 = T.take 15 bs `T.append` "[...]"
+      | otherwise        = bs
+      where
+        bs = T.pack $ show sql
+
 
 -- | Returns the rowid of the most recent successful INSERT on the
 -- given database connection.

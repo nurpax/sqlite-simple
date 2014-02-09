@@ -22,10 +22,12 @@ module Database.SQLite.Simple.Internal where
 
 import           Prelude hiding (catch)
 
+import           Control.Exception (Exception)
 import           Control.Monad
 import           Control.Applicative
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8()
+import           Data.Typeable (Typeable)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 
@@ -42,16 +44,22 @@ import qualified Database.SQLite3 as Base
 -- discouraged.
 newtype Connection = Connection { connectionHandle :: Base.Database }
 
--- | A Field represents metadata about a particular field
+data ColumnOutOfBounds = ColumnOutOfBounds { errorColumnIndex :: Int }
+                      deriving (Eq, Show, Typeable)
 
+instance Exception ColumnOutOfBounds
+
+-- | A Field represents metadata about a particular field
 data Field = Field {
      result   :: Base.SQLData
    , column   :: {-# UNPACK #-} !Int
    }
 
-newtype Row = Row { rowresult  :: [Base.SQLData] }
+-- Named type for holding RowParser read-only state.  Just for making
+-- it easier to make sense out of types in FromRow.
+newtype RowParseRO = RowParseRO { nColumns :: Int }
 
-newtype RowParser a = RP { unRP :: ReaderT Row (StateT Int Ok) a }
+newtype RowParser a = RP { unRP :: ReaderT RowParseRO (StateT (Int, [Base.SQLData]) Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad, MonadPlus )
 
 gettypename :: Base.SQLData -> ByteString

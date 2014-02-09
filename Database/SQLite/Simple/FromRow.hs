@@ -31,14 +31,11 @@ import           Control.Monad (replicateM)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString.Char8 as B
 
 import           Database.SQLite.Simple.FromField
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
 import           Database.SQLite.Simple.Types
-import qualified Database.SQLite3 as Base
 
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.
@@ -64,42 +61,25 @@ class FromRow a where
 
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
-    Row{..} <- ask
-    column <- lift get
-    lift (put (column + 1))
-    let ncols = length rowresult
-    if column >= ncols
-    then do
-      let vals = map (\c -> (gettypename (rowresult !! c)
-                           , ellipsis (rowresult !! c)))
-                     [0..ncols-1]
-          convertError = ConversionFailed
-              (show ncols ++ " values: " ++ show vals)
-              ("at least " ++ show (column + 1)
-                ++ " slots in target type")
-              "mismatch between number of columns to \
-              \convert and number in target type"
-      lift (lift (Errors [SomeException convertError]))
+    RowParseRO{..} <- ask
+    (column, remaining) <- lift get
+    lift (put (column + 1, tail remaining))
+    if column >= nColumns
+    then
+      lift (lift (Errors [SomeException (ColumnOutOfBounds (column+1))]))
     else do
-      let r = rowresult !! column
+      let r = head remaining
           field = Field r column
       lift (lift (fieldP field))
 
 field :: FromField a => RowParser a
 field = fieldWith fromField
 
-ellipsis :: Base.SQLData -> ByteString
-ellipsis sql
-    | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
-    | otherwise        = bs
-  where
-    bs = B.pack $ show sql
-
 numFieldsRemaining :: RowParser Int
 numFieldsRemaining = RP $ do
-    Row{..} <- ask
-    column <- lift get
-    return $! length rowresult - column
+  RowParseRO{..} <- ask
+  (columnIdx,_) <- lift get
+  return $! nColumns - columnIdx
 
 instance (FromField a) => FromRow (Only a) where
     fromRow = Only <$> field
