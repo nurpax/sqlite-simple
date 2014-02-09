@@ -1,5 +1,5 @@
 Name:                sqlite-simple
-Version:             0.4.4.0
+Version:             0.4.5.0
 Synopsis:            Mid-Level SQLite client library
 Description:
     Mid-level SQLite client library, based on postgresql-simple.
@@ -15,7 +15,7 @@ Author:              Bryan O'Sullivan, Leon P Smith, Janne Hellsten
 Maintainer:          Janne Hellsten <jjhellst@gmail.com>
 Copyright:           (c) 2011 MailRank, Inc.,
                      (c) 2011-2012 Leon P Smith,
-                     (c) 2012-2013 Janne Hellsten
+                     (c) 2012-2014 Janne Hellsten
 Homepage:            http://github.com/nurpax/sqlite-simple
 bug-reports:         http://github.com/nurpax/sqlite-simple/issues
 Stability:           stable
