@@ -17,9 +17,9 @@ contains more examples of use and information on its features.
 The library is well tested and stable.  The library should also be
 reasonably performant.  You can find its benchmark suite here:
 [db-bench](https://github.com/nurpax/db-bench).  You can read more
-about sqlite-simple's expected performance in [my blog that compares
-various Haskell database
-libraries](http://nurpax.github.io/posts/2013-08-17-sqlite-simple-benchmarking.html).
+about sqlite-simple's expected performance in [my blog about
+sqlite-simple performance against direct-sqlite, Python and
+C](http://nurpax.github.io/posts/2013-08-17-sqlite-simple-benchmarking.html).
 
 [![Build Status](https://secure.travis-ci.org/nurpax/sqlite-simple.png)](http://travis-ci.org/nurpax/sqlite-simple)
 
