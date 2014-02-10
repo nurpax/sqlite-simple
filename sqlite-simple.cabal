@@ -1,5 +1,5 @@
 Name:                sqlite-simple
-Version:             0.4.5.0
+Version:             0.4.5.1
 Synopsis:            Mid-Level SQLite client library
 Description:
     Mid-level SQLite client library, based on postgresql-simple.
@@ -25,6 +25,7 @@ Build-type:          Simple
 Cabal-version:       >= 1.10
 
 extra-source-files:  README.markdown
+                     changelog
 
 Library
   Default-language:  Haskell2010
