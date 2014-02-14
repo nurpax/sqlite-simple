@@ -343,7 +343,7 @@ convertRow rowRes ncols = do
        | otherwise -> errorColumnMismatch (ColumnOutOfBounds col)
     Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
     Errors [x] ->
-      throw x `catch` (\e -> errorColumnMismatch (e :: ColumnOutOfBounds))
+      throw x `Control.Exception.catch` (\e -> errorColumnMismatch (e :: ColumnOutOfBounds))
     Errors xs  -> throwIO $ ManyErrors xs
   where
     errorColumnMismatch :: ColumnOutOfBounds -> IO r
