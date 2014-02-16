@@ -1,3 +1,10 @@
+0.4.5.2
+	* Build fix for GHC 7.4
+
+0.4.5.1
+	* Docs changes - uploaded new version to Hackage to update the
+	Hackage page.
+
 0.4.5.0
 
 	* Various improvements to documentation.  Especially UTCTime
