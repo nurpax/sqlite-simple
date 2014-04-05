@@ -1,8 +1,9 @@
 language: haskell
 
 before_install:
-    # travis-ci currently does not run `cabal update` (see
-    # https://github.com/travis-ci/travis-build/pull/91)
-    #
-    # So we need to do it manually for now...
-    - cabal update
+  - cabal install hpc-coveralls
+script:
+  - cabal configure --enable-tests --enable-library-coverage && cabal build
+  - run-cabal-test
+after_script:
+  - hpc-coveralls test
