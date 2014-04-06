@@ -1,10 +1,13 @@
 
-module TestImports where
+module TestImports (
+    testImports
+  ) where
 
 -- Test file to test that we can do most things with a single import
 import           Control.Applicative
 import qualified Data.Text as T
-import           Database.SQLite.Simple
+
+import           Common
 
 data TestType = TestType Int Int Int
 
@@ -12,19 +15,25 @@ data TestType = TestType Int Int Int
 instance FromRow TestType where
   fromRow = TestType <$> field <*> field <*> field
 
-foo :: IO ()
-foo = do
+test1 :: IO ()
+test1 = do
   conn <- open ":memory:"
-  [Only _v] <- query_ conn "SELECT * FROM test" :: IO [Only Int]
-  [_v] <- query_ conn "SELECT * FROM test" :: IO [(Int,Int)]
-  [_v] <- query_ conn "SELECT * FROM test" :: IO [TestType]
-  [_v] <- query conn "SELECT ?+?" (3::Int,4::Int):: IO [(Only Int)]
+  execute_ conn "CREATE TABLE testimp (id INTEGER PRIMARY KEY, id2 INTEGER, id3 INTEGER)"
+  execute_ conn "INSERT INTO testimp (id, id2, id3) VALUES (1, 2, 3)"
+  [_v] <- query_ conn "SELECT * FROM testimp" :: IO [TestType]
+  [_v] <- query conn "SELECT ?+?" (3::Int,4::Int) :: IO [(Only Int)]
   close conn
 
-foo2 :: IO ()
-foo2 = do
-  conn <- open ":memory:"
+test2 :: Connection -> IO ()
+test2 conn = do
+  execute_ conn "CREATE TABLE testimp (id INTEGER PRIMARY KEY)"
+  execute_ conn "INSERT INTO testimp (id) VALUES (1)"
   [Only _v] <- query_ conn (Query q) :: IO [Only Int]
-  close conn
+  return ()
   where
-    q = T.concat ["SELECT * FROM ", "test"]
+    q = T.concat ["SELECT * FROM ", "testimp"]
+
+testImports :: TestEnv -> Test
+testImports TestEnv{..} = TestCase $ do
+  test1
+  withConnection ":memory:" test2
