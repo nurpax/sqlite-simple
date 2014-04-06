@@ -126,18 +126,18 @@ instance FromField Integer where
 
 instance FromField Double where
     fromField (Field (SQLFloat flt) _) = Ok flt
-    fromField f                        = returnError ConversionFailed f "need a float"
+    fromField f                        = returnError ConversionFailed f "expecting an SQLFloat column type"
 
 instance FromField Float where
     fromField (Field (SQLFloat flt) _) = Ok . double2Float $ flt
-    fromField f                        = returnError ConversionFailed f "need a float"
+    fromField f                        = returnError ConversionFailed f "expecting an SQLFloat column type"
 
 instance FromField Bool where
     fromField f@(Field (SQLInteger b) _)
       | (b == 0) || (b == 1) = Ok (b /= 0)
       | otherwise = returnError ConversionFailed f ("bool must be 0 or 1, got " ++ show b)
 
-    fromField f = returnError ConversionFailed f "need a float"
+    fromField f = returnError ConversionFailed f "expecting an SQLInteger column type"
 
 instance FromField T.Text where
     fromField (Field (SQLText txt) _) = Ok txt
