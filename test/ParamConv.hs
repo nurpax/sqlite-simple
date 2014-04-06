@@ -1,6 +1,7 @@
 
 module ParamConv (
-    testParamConvInt
+    testParamConvNull
+  , testParamConvInt
   , testParamConvFloat
   , testParamConvBools
   , testParamConvDateTime) where
@@ -8,12 +9,25 @@ module ParamConv (
 import Data.Int
 import Data.Time
 
+import Database.SQLite.Simple.Types (Null(..))
+
 import Common
 
 one, two, three :: Int
 one   = 1
 two   = 2
 three = 3
+
+testParamConvNull :: TestEnv -> Test
+testParamConvNull TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE nulltype (id INTEGER PRIMARY KEY, t1 TEXT)"
+  [Only r] <- (query_ conn "SELECT NULL") :: IO [Only Null]
+  execute conn "INSERT INTO nulltype (id, t1) VALUES (?,?)" (one, r)
+  [Only mr1] <- query_ conn "SELECT t1 FROM nulltype WHERE id = 1" :: IO [Only (Maybe String)]
+  assertEqual "nulls" Nothing mr1
+  execute conn "INSERT INTO nulltype (id, t1) VALUES (?,?)" (two, "foo" :: String)
+  [mr2] <- query_ conn "SELECT t1 FROM nulltype WHERE id = 2" :: IO [Only (Maybe String)]
+  assertEqual "nulls" (Just "foo") (fromOnly mr2)
 
 testParamConvInt :: TestEnv -> Test
 testParamConvInt TestEnv{..} = TestCase $ do

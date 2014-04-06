@@ -62,7 +62,6 @@ testErrorsColumns TestEnv{..} = TestCase $ do
     (do [Only _t1] <- query_ conn "SELECT b FROM cols_bools" :: IO [Only Bool]
         return ())
 
-
 testErrorsInvalidParams :: TestEnv -> Test
 testErrorsInvalidParams TestEnv{..} = TestCase $ do
   execute_ conn "CREATE TABLE invparams (id INTEGER PRIMARY KEY, t TEXT)"
