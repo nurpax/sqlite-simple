@@ -1,3 +1,6 @@
 cabal-dev/
 dist/
 TAGS
+/*.hs.html
+/hpc_*.html
+/test.tix
