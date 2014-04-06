@@ -1,10 +1,13 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ParamConv (
     testParamConvNull
   , testParamConvInt
   , testParamConvFloat
   , testParamConvBools
-  , testParamConvDateTime) where
+  , testParamConvDateTime
+  , testParamConvFromRow
+  , testParamConvToRow) where
 
 import Data.Int
 import Data.Time
@@ -93,3 +96,46 @@ testParamConvBools TestEnv{..} = TestCase $ do
   assertEqual "bool" True r3
   assertEqual "bool" False r4
   assertEqual "bool" False r5
+
+testParamConvFromRow :: TestEnv -> Test
+testParamConvFromRow TestEnv{..} = TestCase $ do
+  [(1,2)] <- query_ conn "SELECT 1,2" :: IO [(Int,Int)]
+  [(1,2,3)] <- query_ conn "SELECT 1,2,3" :: IO [(Int,Int,Int)]
+  [(1,2,3,4)] <- query_ conn "SELECT 1,2,3,4" :: IO [(Int,Int,Int,Int)]
+  [(1,2,3,4,5)] <- query_ conn "SELECT 1,2,3,4,5" :: IO [(Int,Int,Int,Int,Int)]
+  [(1,2,3,4,5,6)] <- query_ conn "SELECT 1,2,3,4,5,6" :: IO [(Int,Int,Int,Int,Int,Int)]
+  [(1,2,3,4,5,6,7)] <- query_ conn "SELECT 1,2,3,4,5,6,7" :: IO [(Int,Int,Int,Int,Int,Int,Int)]
+  [(1,2,3,4,5,6,7,8)] <- query_ conn "SELECT 1,2,3,4,5,6,7,8" :: IO [(Int,Int,Int,Int,Int,Int,Int,Int)]
+  [(1,2,3,4,5,6,7,8,9)] <- query_ conn "SELECT 1,2,3,4,5,6,7,8,9" :: IO [(Int,Int,Int,Int,Int,Int,Int,Int,Int)]
+  [(1,2,3,4,5,6,7,8,9,10)] <- query_ conn "SELECT 1,2,3,4,5,6,7,8,9,10" :: IO [(Int,Int,Int,Int,Int,Int,Int,Int,Int,Int)]
+  [[1,2,3]] <- query_ conn "SELECT 1,2,3" :: IO [[Int]]
+  return ()
+
+testParamConvToRow :: TestEnv -> Test
+testParamConvToRow TestEnv{..} = TestCase $ do
+  [Only (s :: Int)] <- query conn "SELECT 13" ()
+  13 @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?" (Only one)
+  1 @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?+?" (one, two)
+  (1+2) @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?+?+?" (one, two, three)
+  (1+2+3) @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?+?+?+?" (one, two, three, 4 :: Int)
+  (1+2+3+4) @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?+?+?+?+?" (one, two, three, 4 :: Int, 5 :: Int)
+  (1+2+3+4+5) @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?+?+?+?+?+?" (one, two, three, 4 :: Int, 5 :: Int, 6 :: Int)
+  (1+2+3+4+5+6) @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?+?+?+?+?+?+?"
+                         (one, two, three, 4 :: Int, 5 :: Int, 6 :: Int, 7 :: Int)
+  (1+2+3+4+5+6+7) @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?+?+?+?+?+?+?+?"
+                         (one, two, three, 4 :: Int, 5 :: Int, 6 :: Int, 7 :: Int, 8 :: Int)
+  (1+2+3+4+5+6+7+8) @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?+?+?+?+?+?+?+?+?"
+                         (one, two, three, 4 :: Int, 5 :: Int, 6 :: Int, 7 :: Int, 8 :: Int, 9 :: Int)
+  (1+2+3+4+5+6+7+8+9) @=? s
+  [Only (s :: Int)] <- query conn "SELECT ?+?+?+?+?+?+?+?+?+?"
+                         (one, two, three, 4 :: Int, 5 :: Int, 6 :: Int, 7 :: Int, 8 :: Int, 9 :: Int, 10 :: Int)
+  (1+2+3+4+5+6+7+8+9+10) @=? s

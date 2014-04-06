@@ -33,6 +33,8 @@ tests =
     , TestLabel "ParamConv" . testParamConvFloat
     , TestLabel "ParamConv" . testParamConvDateTime
     , TestLabel "ParamConv" . testParamConvBools
+    , TestLabel "ParamConv" . testParamConvToRow
+    , TestLabel "ParamConv" . testParamConvFromRow
     , TestLabel "Errors"    . testErrorsColumns
     , TestLabel "Errors"    . testErrorsInvalidParams
     , TestLabel "Errors"    . testErrorsWithStatement
