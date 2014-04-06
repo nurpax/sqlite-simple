@@ -57,11 +57,7 @@ testConnect = open ":memory:"
 
 withTestEnv :: (TestEnv -> IO a) -> IO a
 withTestEnv cb =
-    withConn $ \conn ->
-        cb TestEnv
-            { conn     = conn
-            , withConn = withConn
-            }
+  withConn $ \conn -> cb TestEnv { conn = conn }
   where
     withConn = bracket testConnect close
 

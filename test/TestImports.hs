@@ -33,7 +33,13 @@ test2 conn = do
   where
     q = T.concat ["SELECT * FROM ", "testimp"]
 
+test3 :: Connection -> IO ()
+test3 conn = do
+  [_v] <- query conn "SELECT ?+?" (3::Int,4::Int) :: IO [(Only Int)]
+  return ()
+
 testImports :: TestEnv -> Test
-testImports TestEnv{..} = TestCase $ do
+testImports env = TestCase $ do
   test1
   withConnection ":memory:" test2
+  test3 (conn env)

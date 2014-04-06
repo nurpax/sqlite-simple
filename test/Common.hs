@@ -15,6 +15,4 @@ data TestEnv
     = TestEnv
         { conn     :: Connection
             -- ^ Connection shared by all the tests
-        , withConn :: forall a. (Connection -> IO a) -> IO a
-            -- ^ Bracket for spawning additional connections
         }
