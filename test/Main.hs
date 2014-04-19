@@ -31,6 +31,7 @@ tests =
     , TestLabel "Simple"    . testSimpleQueryCov
     , TestLabel "ParamConv" . testParamConvNull
     , TestLabel "ParamConv" . testParamConvInt
+    , TestLabel "ParamConv" . testParamConvIntWidths
     , TestLabel "ParamConv" . testParamConvFloat
     , TestLabel "ParamConv" . testParamConvDateTime
     , TestLabel "ParamConv" . testParamConvBools

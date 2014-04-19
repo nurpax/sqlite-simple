@@ -3,6 +3,7 @@
 module ParamConv (
     testParamConvNull
   , testParamConvInt
+  , testParamConvIntWidths
   , testParamConvFloat
   , testParamConvBools
   , testParamConvDateTime
@@ -10,6 +11,7 @@ module ParamConv (
   , testParamConvToRow) where
 
 import Data.Int
+import Data.Word
 import Data.Time
 
 import Database.SQLite.Simple.Types (Null(..))
@@ -57,6 +59,22 @@ testParamConvInt TestEnv{..} = TestCase $ do
   assertEqual "should see nothing" Nothing r
   [Only r] <- (query conn "SELECT ?") (Only (Just three :: Maybe Int)) :: IO [Only (Maybe Int)]
   assertEqual "should see 4" (Just 3) r
+
+testParamConvIntWidths :: TestEnv -> Test
+testParamConvIntWidths TestEnv{..} = TestCase $ do
+  -- ToField
+  [Only r] <- (query conn "SELECT ?" (Only (1 :: Int8))) :: IO [Only Int]
+  assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only (257 :: Int8))) :: IO [Only Int] -- wrap around
+  assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only (257 :: Int16))) :: IO [Only Int]
+  assertEqual "value" 257 r
+  [Only r] <- (query conn "SELECT ?" (Only (1 :: Word8))) :: IO [Only Int]
+  assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only (257 :: Word8))) :: IO [Only Int] -- wrap around
+  assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only (257 :: Word16))) :: IO [Only Int]
+  assertEqual "value" 257 r
 
 testParamConvFloat :: TestEnv -> Test
 testParamConvFloat TestEnv{..} = TestCase $ do
