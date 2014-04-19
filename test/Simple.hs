@@ -10,6 +10,7 @@ module Simple (
   , testSimpleUTCTime
   , testSimpleUTCTimeTZ
   , testSimpleUTCTimeParams
+  , testSimpleQueryCov
   ) where
 
 import qualified Data.Text as T
@@ -195,3 +196,11 @@ testSimpleUTCTimeParams TestEnv{..} = TestCase $ do
       let utct = read . T.unpack $ tstr :: UTCTime
       [Only t] <- query conn "SELECT ?" (Only utct) :: IO [Only T.Text]
       assertEqual "UTCTime" tstr t
+
+testSimpleQueryCov :: TestEnv -> Test
+testSimpleQueryCov TestEnv{..} = TestCase $ do
+  let str = "SELECT 1+1" :: T.Text
+      q   = "SELECT 1+1" :: Query
+  fromQuery q @=? str
+  q @=? q
+  True @=? q <= q

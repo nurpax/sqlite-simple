@@ -28,6 +28,7 @@ tests =
     , TestLabel "Simple"    . testSimpleUTCTime
     , TestLabel "Simple"    . testSimpleUTCTimeTZ
     , TestLabel "Simple"    . testSimpleUTCTimeParams
+    , TestLabel "Simple"    . testSimpleQueryCov
     , TestLabel "ParamConv" . testParamConvNull
     , TestLabel "ParamConv" . testParamConvInt
     , TestLabel "ParamConv" . testParamConvFloat
