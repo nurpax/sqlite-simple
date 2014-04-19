@@ -5,4 +5,4 @@ script:
   - cabal configure --enable-tests --enable-library-coverage && cabal build
   - run-cabal-test
 after_script:
-  - hpc-coveralls test
+  - hpc-coveralls --exclude-dir=test test
