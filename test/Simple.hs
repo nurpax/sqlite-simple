@@ -11,11 +11,16 @@ module Simple (
   , testSimpleUTCTimeTZ
   , testSimpleUTCTimeParams
   , testSimpleQueryCov
+  , testSimpleStrings
   ) where
 
 import qualified Data.Text as T
-import Data.Time (UTCTime, Day)
-import Common
+import qualified Data.Text.Lazy as LT
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
+import           Data.Time (UTCTime, Day)
+
+import           Common
 
 -- Simplest SELECT
 testSimpleOnePlusOne :: TestEnv -> Test
@@ -204,3 +209,22 @@ testSimpleQueryCov TestEnv{..} = TestCase $ do
   fromQuery q @=? str
   q @=? q
   True @=? q <= q
+
+testSimpleStrings :: TestEnv -> Test
+testSimpleStrings TestEnv{..} = TestCase $ do
+  [Only s] <- query_ conn "SELECT 'str1'"  :: IO [Only T.Text]
+  s @=? "str1"
+  [Only s] <- query_ conn "SELECT 'strLazy'"  :: IO [Only LT.Text]
+  s @=? "strLazy"
+  [Only s] <- query conn "SELECT ?" (Only ("strP" :: T.Text)) :: IO [Only T.Text]
+  s @=? "strP"
+  [Only s] <- query conn "SELECT ?" (Only ("strPLazy" :: LT.Text)) :: IO [Only T.Text]
+  s @=? "strPLazy"
+  -- ByteStrings are blobs in sqlite storage, so use ByteString for
+  -- both input and output
+  [Only s] <- query conn "SELECT ?" (Only ("strBsP" :: BS.ByteString)) :: IO [Only BS.ByteString]
+  s @=? "strBsP"
+  [Only s] <- query conn "SELECT ?" (Only ("strBsPLazy" :: LBS.ByteString)) :: IO [Only BS.ByteString]
+  s @=? "strBsPLazy"
+  [Only s] <- query conn "SELECT ?" (Only ("strBsPLazy2" :: BS.ByteString)) :: IO [Only LBS.ByteString]
+  s @=? "strBsPLazy2"

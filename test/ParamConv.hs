@@ -4,6 +4,7 @@ module ParamConv (
     testParamConvNull
   , testParamConvInt
   , testParamConvIntWidths
+  , testParamConvIntWidthsFromField
   , testParamConvFloat
   , testParamConvBools
   , testParamConvDateTime
@@ -38,11 +39,15 @@ testParamConvInt :: TestEnv -> Test
 testParamConvInt TestEnv{..} = TestCase $ do
   [Only r] <- (query conn "SELECT ?" (Only one)) :: IO [Only Int]
   assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only one)) :: IO [Only Integer]
+  assertEqual "value" 1 r
   [Only r] <- (query conn "SELECT ?+?" (one, two)) :: IO [Only Int]
   assertEqual "value" 3 r
   [Only r] <- (query conn "SELECT ?+?" (one, 15 :: Int64)) :: IO [Only Int]
   assertEqual "value" 16 r
   [Only r] <- (query conn "SELECT ?+?" (two, 14 :: Int32)) :: IO [Only Int]
+  assertEqual "value" 16 r
+  [Only r] <- (query conn "SELECT ?+?" (two, 14 :: Integer)) :: IO [Only Int]
   assertEqual "value" 16 r
   -- This overflows 32-bit ints, verify that we get more than 32-bits out
   [Only r] <- (query conn "SELECT 255*?" (Only (0x7FFFFFFF :: Int32))) :: IO [Only Int64]
@@ -62,19 +67,53 @@ testParamConvInt TestEnv{..} = TestCase $ do
 
 testParamConvIntWidths :: TestEnv -> Test
 testParamConvIntWidths TestEnv{..} = TestCase $ do
-  -- ToField
   [Only r] <- (query conn "SELECT ?" (Only (1 :: Int8))) :: IO [Only Int]
   assertEqual "value" 1 r
   [Only r] <- (query conn "SELECT ?" (Only (257 :: Int8))) :: IO [Only Int] -- wrap around
   assertEqual "value" 1 r
   [Only r] <- (query conn "SELECT ?" (Only (257 :: Int16))) :: IO [Only Int]
   assertEqual "value" 257 r
+  [Only r] <- (query conn "SELECT ?" (Only (258 :: Int32))) :: IO [Only Int]
+  assertEqual "value" 258 r
   [Only r] <- (query conn "SELECT ?" (Only (1 :: Word8))) :: IO [Only Int]
   assertEqual "value" 1 r
   [Only r] <- (query conn "SELECT ?" (Only (257 :: Word8))) :: IO [Only Int] -- wrap around
   assertEqual "value" 1 r
   [Only r] <- (query conn "SELECT ?" (Only (257 :: Word16))) :: IO [Only Int]
   assertEqual "value" 257 r
+  [Only r] <- (query conn "SELECT ?" (Only (257 :: Word32))) :: IO [Only Int]
+  assertEqual "value" 257 r
+  [Only r] <- (query conn "SELECT ?" (Only (0x100000000 :: Word64))) :: IO [Only Int]
+  assertEqual "value" 0x100000000 r
+  [Only r] <- (query conn "SELECT ?" (Only (1 :: Integer))) :: IO [Only Int]
+  assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only (1 :: Word))) :: IO [Only Int]
+  assertEqual "value" 1 r
+
+testParamConvIntWidthsFromField :: TestEnv -> Test
+testParamConvIntWidthsFromField TestEnv{..} = TestCase $ do
+  [Only r] <- (query conn "SELECT ?" (Only (1 :: Int))) :: IO [Only Int8]
+  assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only (257 :: Int))) :: IO [Only Int8] -- wrap around
+  assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only (65536 :: Int))) :: IO [Only Int16] -- wrap around
+  assertEqual "value" 0 r
+  [Only r] <- (query conn "SELECT ?" (Only (65536 :: Int))) :: IO [Only Int32] -- wrap around
+  assertEqual "value" 65536 r
+  [Only r] <- (query conn "SELECT ?" (Only (258 :: Int))) :: IO [Only Int32]
+  assertEqual "value" 258 r
+  [Only r] <- (query conn "SELECT ?" (Only (1 :: Int))) :: IO [Only Word8]
+  assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only (257 :: Int))) :: IO [Only Word8] -- wrap around
+  assertEqual "value" 1 r
+  [Only r] <- (query conn "SELECT ?" (Only (257 :: Int))) :: IO [Only Word16]
+  assertEqual "value" 257 r
+  [Only r] <- (query conn "SELECT ?" (Only (257 :: Int))) :: IO [Only Word32]
+  assertEqual "value" 257 r
+  [Only r] <- (query conn "SELECT ?" (Only (0x100000000 :: Int64))) :: IO [Only Word64]
+  assertEqual "value" 0x100000000 r
+  [Only r] <- (query conn "SELECT ?" (Only (1 :: Int))) :: IO [Only Word]
+  assertEqual "value" 1 r
 
 testParamConvFloat :: TestEnv -> Test
 testParamConvFloat TestEnv{..} = TestCase $ do
