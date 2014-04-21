@@ -1,3 +1,9 @@
+TBD
+	* Add FromField instances for Int8, Word, Word8, Word16, Word32
+	  and Word64.
+	* Fix typos in some type conversion error messages.
+	* Improved test coverage.
+
 0.4.5.2
 	* Build fix for GHC 7.4
 
