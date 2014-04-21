@@ -39,6 +39,7 @@ tests =
     , TestLabel "ParamConv" . testParamConvBools
     , TestLabel "ParamConv" . testParamConvToRow
     , TestLabel "ParamConv" . testParamConvFromRow
+    , TestLabel "ParamConv" . testParamConvComposite
     , TestLabel "Errors"    . testErrorsColumns
     , TestLabel "Errors"    . testErrorsInvalidParams
     , TestLabel "Errors"    . testErrorsWithStatement

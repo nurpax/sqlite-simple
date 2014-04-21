@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, OverloadedStrings #-}
 
 module ParamConv (
     testParamConvNull
@@ -9,13 +9,15 @@ module ParamConv (
   , testParamConvBools
   , testParamConvDateTime
   , testParamConvFromRow
-  , testParamConvToRow) where
+  , testParamConvToRow
+  , testParamConvComposite) where
 
-import Data.Int
-import Data.Word
-import Data.Time
-
-import Database.SQLite.Simple.Types (Null(..))
+import           Control.Applicative
+import           Data.Int
+import           Data.Word
+import           Data.Time
+import qualified Data.Text as T
+import           Database.SQLite.Simple.Types (Null(..))
 
 import Common
 
@@ -196,3 +198,32 @@ testParamConvToRow TestEnv{..} = TestCase $ do
   [Only (s :: Int)] <- query conn "SELECT ?+?+?+?+?+?+?+?+?+?"
                          (one, two, three, 4 :: Int, 5 :: Int, 6 :: Int, 7 :: Int, 8 :: Int, 9 :: Int, 10 :: Int)
   (1+2+3+4+5+6+7+8+9+10) @=? s
+
+data TestTuple  = TestTuple  Int64 Int64 deriving (Eq, Show)
+data TestTuple2 = TestTuple2 T.Text T.Text deriving (Eq, Show)
+
+instance FromRow TestTuple where
+  fromRow = TestTuple <$> field <*> field
+
+instance FromRow TestTuple2 where
+  fromRow = TestTuple2 <$> field <*> field
+
+instance ToRow TestTuple where
+  toRow (TestTuple a b) = [SQLInteger a, SQLInteger b]
+
+instance ToRow TestTuple2 where
+  toRow (TestTuple2 a b) = [SQLText a, SQLText b]
+
+testParamConvComposite :: TestEnv -> Test
+testParamConvComposite TestEnv{..} = TestCase $ do
+  [t1] <- query_ conn "SELECT 1,2"
+  TestTuple 1 2 @=? t1
+  [t2] <- query_ conn "SELECT 'foo','bar'"
+  TestTuple2 "foo" "bar" @=? t2
+  [a :. b] <- query_ conn "SELECT 4,5,'baz','xyzz'"
+  TestTuple 4 5 :. TestTuple2 "baz" "xyzz" @=? a :. b
+  [TestTuple x y :. TestTuple2 z w] <- query conn "SELECT ?,?,?,?" (a :. b)
+  x @=? 4
+  y @=? 5
+  z @=? "baz"
+  w @=? "xyzz"
