@@ -39,11 +39,12 @@ import           Control.Exception (SomeException(..), Exception)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
-import           Data.Int (Int16, Int32, Int64)
+import           Data.Int (Int8, Int16, Int32, Int64)
 import           Data.Time (UTCTime, Day)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Typeable (Typeable, typeOf)
+import           Data.Word (Word, Word8, Word16, Word32, Word64)
 import           GHC.Float (double2Float)
 
 import           Database.SQLite3 as Base
@@ -109,6 +110,9 @@ takeInt :: (Num a, Typeable a) => Field -> Ok a
 takeInt (Field (SQLInteger i) _) = Ok . fromIntegral $ i
 takeInt f                        = returnError ConversionFailed f "need an int"
 
+instance FromField Int8 where
+    fromField = takeInt
+
 instance FromField Int16 where
     fromField = takeInt
 
@@ -122,6 +126,21 @@ instance FromField Int64 where
     fromField = takeInt
 
 instance FromField Integer where
+    fromField = takeInt
+
+instance FromField Word8 where
+    fromField = takeInt
+
+instance FromField Word16 where
+    fromField = takeInt
+
+instance FromField Word32 where
+    fromField = takeInt
+
+instance FromField Word64 where
+    fromField = takeInt
+
+instance FromField Word where
     fromField = takeInt
 
 instance FromField Double where
