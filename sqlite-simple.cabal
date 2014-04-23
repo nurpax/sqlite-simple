@@ -4,10 +4,10 @@ Synopsis:            Mid-Level SQLite client library
 Description:
     Mid-level SQLite client library, based on postgresql-simple.
     .
-    Main documentation: <docs/Database-SQLite-Simple.html Database.SQLite.Simple>
+    Main documentation (with examples): <docs/Database-SQLite-Simple.html Database.SQLite.Simple>
     .
-    For more info, browse to <http://github.com/nurpax/sqlite-simple>
-    for examples & more information.
+    You can view the project page at <http://github.com/nurpax/sqlite-simple>
+    for more information.
 
 License:             BSD3
 License-file:        LICENSE

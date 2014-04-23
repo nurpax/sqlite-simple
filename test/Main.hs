@@ -40,8 +40,10 @@ tests =
     , TestLabel "ParamConv" . testParamConvToRow
     , TestLabel "ParamConv" . testParamConvFromRow
     , TestLabel "ParamConv" . testParamConvComposite
+    , TestLabel "ParamConv" . testParamNamed
     , TestLabel "Errors"    . testErrorsColumns
     , TestLabel "Errors"    . testErrorsInvalidParams
+    , TestLabel "Errors"    . testErrorsInvalidNamedParams
     , TestLabel "Errors"    . testErrorsWithStatement
     , TestLabel "Errors"    . testErrorsColumnName
     , TestLabel "Utf8"      . testUtf8Simplest

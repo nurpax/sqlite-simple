@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, GeneralizedNewtypeDeriving, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, GeneralizedNewtypeDeriving, ScopedTypeVariables, GADTs #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -21,6 +21,12 @@ module Database.SQLite.Simple (
 
     -- ** Parameter substitution
     -- $subst
+
+    -- *** Positional parameters
+    -- $substpos
+
+    -- *** Named parameters
+    -- $substnamed
 
     -- *** Type inference
     -- $inference
@@ -49,6 +55,7 @@ module Database.SQLite.Simple (
   , Base.SQLData(..)
   , Statement
   , ColumnIndex(..)
+  , NamedParam(..)
     -- * Connections
   , open
   , close
@@ -57,13 +64,16 @@ module Database.SQLite.Simple (
     -- * Queries that return results
   , query
   , query_
+  , queryNamed
   , lastInsertRowId
     -- * Queries that stream results
   , fold
   , fold_
+  , foldNamed
     -- * Statements that do not return results
   , execute
   , execute_
+  , executeNamed
   , field
     -- * Low-level statement API for stream access and prepared statements
   , openStatement
@@ -97,6 +107,7 @@ import           Database.SQLite.Simple.FromField (ResultError(..))
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
 import           Database.SQLite.Simple.ToRow (ToRow(..))
+import           Database.SQLite.Simple.ToField (ToField(..))
 import           Database.SQLite.Simple.FromRow
 
 -- | An SQLite prepared statement.
@@ -105,6 +116,11 @@ newtype Statement = Statement Base.Statement
 -- | Index of a column in a result set. Column indices start from 0.
 newtype ColumnIndex = ColumnIndex BaseD.ColumnIndex
     deriving (Eq, Ord, Enum, Num, Real, Integral)
+
+data NamedParam where
+    (:=) :: (ToField v) => T.Text -> v -> NamedParam
+
+infixr 3 :=
 
 -- | Exception thrown if a 'Query' was malformed.
 -- This may occur if the number of \'@?@\' characters in the query
@@ -176,6 +192,30 @@ bind (Statement stmt) params = do
                     templ qp
         Nothing -> return ()
 
+-- | Binds named parameters to a prepared statement.
+bindNamed :: Statement -> [NamedParam] -> IO ()
+bindNamed (Statement stmt) params = do
+  stmtParamCount <- Base.bindParameterCount stmt
+  when (length params /= fromIntegral stmtParamCount) $ throwColumnMismatch stmtParamCount
+  bind stmt params
+  where
+    bind stmt params =
+      mapM_ (\(n := v) -> do
+              idx <- BaseD.bindParameterIndex stmt (BaseD.Utf8 . TE.encodeUtf8 $ n)
+              case idx of
+                Just i ->
+                  Base.bindSQLData stmt i (toField v)
+                Nothing -> do
+                  templ <- getQuery stmt
+                  fmtErrorNamed ("Unknown named parameter '" ++ T.unpack n ++ "'")
+                    templ params)
+            params
+
+    throwColumnMismatch nParams = do
+      templ <- getQuery stmt
+      fmtErrorNamed ("SQL query contains " ++ show nParams ++ " params, but " ++
+                     show (length params) ++ " arguments given") templ params
+
 -- | Resets a statement. This does not reset bound parameters, if any, but
 -- allows the statement to be reexecuted again by invoking 'nextRow'.
 reset :: Statement -> IO ()
@@ -226,12 +266,26 @@ withStatement :: Connection -> Query -> (Statement -> IO a) -> IO a
 withStatement conn query = bracket (openStatement conn query) closeStatement
 
 -- A version of 'withStatement' which binds parameters.
-withStatementP :: (ToRow params) => Connection -> Query -> params -> (Statement -> IO a) -> IO a
-withStatementP conn template params action =
+withStatementParams :: (ToRow params)
+                       => Connection
+                       -> Query
+                       -> params
+                       -> (Statement -> IO a)
+                       -> IO a
+withStatementParams conn template params action =
   withStatement conn template $ \stmt ->
     -- Don't use withBind here, there is no need to reset the parameters since
     -- we're destroying the statement
     bind stmt (toRow params) >> action stmt
+
+-- A version of 'withStatement' which binds named parameters.
+withStatementNamedParams :: Connection
+                         -> Query
+                         -> [NamedParam]
+                         -> (Statement -> IO a)
+                         -> IO a
+withStatementNamedParams conn template namedParams action =
+  withStatement conn template $ \stmt -> bindNamed stmt namedParams >> action stmt
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
@@ -239,7 +293,7 @@ withStatementP conn template params action =
 -- Throws 'FormatError' if the query could not be formatted correctly.
 execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute conn template qs =
-  withStatementP conn template qs $ \(Statement stmt) ->
+  withStatementParams conn template qs $ \(Statement stmt) ->
     void . Base.step $ stmt
 
 
@@ -262,7 +316,7 @@ doFoldToList stmt =
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn templ qs =
-  withStatementP conn templ qs $ \stmt ->
+  withStatementParams conn templ qs $ \stmt ->
     doFoldToList stmt
 
 -- | A version of 'query' that does not perform query substitution.
@@ -270,10 +324,23 @@ query_ :: (FromRow r) => Connection -> Query -> IO [r]
 query_ conn query =
   withStatement conn query doFoldToList
 
+-- | A version of 'query' where the query parameters (placeholders)
+-- are named.
+queryNamed :: (FromRow r) => Connection -> Query -> [NamedParam] -> IO [r]
+queryNamed conn templ params =
+  withStatementNamedParams conn templ params $ \stmt -> doFoldToList stmt
+
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
 execute_ conn template =
   withStatement conn template $ \(Statement stmt) ->
+    void $ Base.step stmt
+
+-- | A version of 'execute' where the query parameters (placeholders)
+-- are named.
+executeNamed :: Connection -> Query -> [NamedParam] -> IO ()
+executeNamed conn template params =
+  withStatementNamedParams conn template params $ \(Statement stmt) ->
     void $ Base.step stmt
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return results.
@@ -296,7 +363,7 @@ fold :: ( FromRow row, ToRow params )
         -> (a -> row -> IO a)
         -> IO a
 fold conn query params initalState action =
-  withStatementP conn query params $ \stmt ->
+  withStatementParams conn query params $ \stmt ->
     doFold stmt initalState action
 
 -- | A version of 'fold' which does not perform parameter substitution.
@@ -308,6 +375,19 @@ fold_ :: ( FromRow row )
         -> IO a
 fold_ conn query initalState action =
   withStatement conn query $ \stmt ->
+    doFold stmt initalState action
+
+-- | A version of 'fold' where the query parameters (placeholders) are
+-- named.
+foldNamed :: ( FromRow row )
+          => Connection
+          -> Query
+          -> [NamedParam]
+          -> a
+          -> (a -> row -> IO a)
+          -> IO a
+foldNamed conn query params initalState action =
+  withStatementNamedParams conn query params $ \stmt ->
     doFold stmt initalState action
 
 doFold :: (FromRow row) => Statement ->  a -> (a -> row -> IO a) -> IO a
@@ -370,11 +450,20 @@ lastInsertRowId :: Connection -> IO Int64
 lastInsertRowId (Connection c) = BaseD.lastInsertRowId c
 
 fmtError :: String -> Query -> [Base.SQLData] -> a
-fmtError msg q xs = throw FormatError {
-                      fmtMessage = msg
-                    , fmtQuery = q
-                    , fmtParams = map show xs
-                    }
+fmtError msg q xs =
+  throw FormatError {
+      fmtMessage  = msg
+    , fmtQuery    = q
+    , fmtParams   = map show xs
+    }
+
+fmtErrorNamed :: String -> Query -> [NamedParam] -> a
+fmtErrorNamed msg q xs =
+  throw FormatError {
+      fmtMessage = msg
+    , fmtQuery   = q
+    , fmtParams  = map (\(k := v) -> show (k, toField v)) xs
+    }
 
 getQuery :: Base.Statement -> IO Query
 getQuery stmt =
@@ -448,15 +537,27 @@ getQuery stmt =
 -- parameters that change, this library uses SQLite's parameter
 -- binding query substitution capability.
 --
--- The 'Query' template accepted by 'query' and 'execute' can contain
--- any number of \"@?@\" characters.  Both 'query' and 'execute'
--- accept a third argument, typically a tuple. When constructing the
--- real query to execute, these functions replace the first \"@?@\" in
--- the template with the first element of the tuple, the second
--- \"@?@\" with the second element, and so on. If necessary, each
--- tuple element will be quoted and escaped prior to substitution;
--- this defeats the single most common injection vector for malicious
--- data.
+-- This library restricts parameter substitution to work only with
+-- named parameters and positional arguments with the \"@?@\" syntax.
+-- The API does not support for mixing these two types of bindings.
+-- Unsupported parameters will be rejected and a 'FormatError' will be
+-- thrown.
+--
+-- You should always use parameter substitution instead of inlining
+-- your dynamic parameters into your queries with messy string
+-- concatenation.  SQLite will automatically quote and escape your
+-- data into these placeholder parameters; this defeats the single
+-- most common injection vector for malicious data.
+
+-- $substpos
+--
+-- The 'Query' template accepted by 'query', 'execute' and 'fold' can
+-- contain any number of \"@?@\" characters.  Both 'query' and
+-- 'execute' accept a third argument, typically a tuple. When the
+-- query executes, the first \"@?@\" in the template will be replaced
+-- with the first element of the tuple, the second \"@?@\" with the
+-- second element, and so on.  This substitution happens inside the
+-- native SQLite implementation.
 --
 -- For example, given the following 'Query' template:
 --
@@ -478,11 +579,34 @@ getQuery stmt =
 -- validate your query. It's up to you to write syntactically valid
 -- SQL, and to ensure that each \"@?@\" in your query template is
 -- matched with the right tuple element.
+
+-- $substnamed
 --
--- This library restricts parameter substitution to work only with
--- \"@?@\" characters.  SQLite natively supports several other
--- syntaxes for binding query parameters.  Unsupported parameters will
--- be rejected and a 'FormatError' will be thrown.
+-- Named parameters are accepted by 'queryNamed', 'executeNamed' and
+-- 'foldNamed'.  These functions take a list of 'NamedParam's which
+-- are key-value pairs binding a value to an argument name.  As is the
+-- case with \"@?@\" parameters, named parameters are automatically
+-- escaped by the SQLite library.  The parameter names are prefixed
+-- with either @:@ or @\@@, e.g. @:foo@ or @\@foo@.
+--
+-- Example:
+--
+-- @
+-- r \<- 'queryNamed' c \"SELECT id,text FROM posts WHERE id = :id AND date >= :date\" [\":id\" ':=' postId, \":date\" := afterDate]
+-- @
+--
+-- Note that you can mix different value types in the same list.
+-- E.g., the following is perfectly legal:
+--
+-- @
+-- [\":id\" := (3 :: Int), \":str\" := (\"foo\" :: String)]
+-- @
+--
+-- The parameter name (or key) in the 'NamedParam' must match exactly
+-- the name written in the SQL query.  E.g., if you used @:foo@ in
+-- your SQL statement, you need to use @\":foo\"@ as the parameter
+-- key, not @\"foo\"@.  Some libraries like Python's sqlite3
+-- automatically drop the @:@ character from the name.
 
 -- $inference
 --
@@ -516,6 +640,8 @@ getQuery stmt =
 --
 -- > execute conn "insert into users (first_name) values (?)"
 -- >              ["Nuala"]
+--
+-- Or you can use named parameters which do not have this restriction.
 
 -- $result
 --

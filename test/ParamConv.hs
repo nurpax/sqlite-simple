@@ -10,7 +10,8 @@ module ParamConv (
   , testParamConvDateTime
   , testParamConvFromRow
   , testParamConvToRow
-  , testParamConvComposite) where
+  , testParamConvComposite
+  , testParamNamed) where
 
 import           Control.Applicative
 import           Data.Int
@@ -227,3 +228,17 @@ testParamConvComposite TestEnv{..} = TestCase $ do
   y @=? 5
   z @=? "baz"
   w @=? "xyzz"
+
+testParamNamed :: TestEnv -> Test
+testParamNamed TestEnv{..} = TestCase $ do
+  [Only t1] <- queryNamed conn "SELECT :foo / :bar" [":foo" := two, ":bar" := one]
+  t1 @=? (2 :: Int)
+  [(t1,t2)] <- queryNamed conn "SELECT :foo,:bar" [":foo" := ("foo" :: T.Text), ":bar" := one]
+  t1 @=? ("foo" :: T.Text)
+  t2 @=? one
+  execute_ conn "CREATE TABLE np (id INTEGER PRIMARY KEY, b BOOLEAN)"
+  executeNamed conn "INSERT INTO np (b) VALUES (:b)" [":b" := True]
+  [Only t1] <- query_ conn "SELECT b FROM np"
+  True @=? t1
+
+

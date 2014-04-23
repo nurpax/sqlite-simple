@@ -3,6 +3,7 @@
 module Errors (
     testErrorsColumns
   , testErrorsInvalidParams
+  , testErrorsInvalidNamedParams
   , testErrorsWithStatement
   , testErrorsColumnName
   ) where
@@ -74,6 +75,16 @@ testErrorsInvalidParams TestEnv{..} = TestCase $ do
   -- execute.  This should cause an error.
   assertFormatErrorCaught
     (execute conn "INSERT INTO invparams (id, t) VALUES (?, ?)" (Only (3::Int)))
+
+testErrorsInvalidNamedParams :: TestEnv -> Test
+testErrorsInvalidNamedParams TestEnv{..} = TestCase $ do
+  -- Test that only unnamed params are accepted
+  assertFormatErrorCaught
+    (queryNamed conn "SELECT :foo" [":foox" := (1 :: Int)] :: IO [Only Int])
+  -- In this case, we have two bound params but only one given to
+  -- execute.  This should cause an error.
+  assertFormatErrorCaught
+    (queryNamed conn "SELECT :foo + :bar" [":foo" := (1 :: Int)] :: IO [Only Int])
 
 testErrorsWithStatement :: TestEnv -> Test
 testErrorsWithStatement TestEnv{..} = TestCase $ do
