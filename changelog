@@ -1,4 +1,7 @@
-TBD
+0.4.6.0
+	* Add "named parameters" variants of query & al.  Named params
+	  allow queries like:
+	  res <- queryNamed conn "SELECT * FROM posts WHERE id = :id" [":id" := postId]
 	* Add FromField instances for Int8, Word, Word8, Word16, Word32
 	  and Word64.
 	* Fix typos in some type conversion error messages.
