@@ -1,5 +1,5 @@
 Name:                sqlite-simple
-Version:             0.4.5.2
+Version:             0.4.6.0
 Synopsis:            Mid-Level SQLite client library
 Description:
     Mid-level SQLite client library, based on postgresql-simple.
@@ -48,7 +48,7 @@ Library
     blaze-textual,
     bytestring >= 0.9,
     containers,
-    direct-sqlite >= 2.3.4 && < 2.4,
+    direct-sqlite >= 2.3.13 && < 2.4,
     text >= 0.11,
     time,
     transformers
