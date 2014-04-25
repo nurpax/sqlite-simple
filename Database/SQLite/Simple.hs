@@ -122,6 +122,9 @@ data NamedParam where
 
 infixr 3 :=
 
+instance Show NamedParam where
+  show (k := v) = show (k, toField v)
+
 -- | Exception thrown if a 'Query' was malformed.
 -- This may occur if the number of \'@?@\' characters in the query
 -- string does not match the number of parameters provided.
@@ -207,14 +210,14 @@ bindNamed (Statement stmt) params = do
                   Base.bindSQLData stmt i (toField v)
                 Nothing -> do
                   templ <- getQuery stmt
-                  fmtErrorNamed ("Unknown named parameter '" ++ T.unpack n ++ "'")
+                  fmtError ("Unknown named parameter '" ++ T.unpack n ++ "'")
                     templ params)
             params
 
     throwColumnMismatch nParams = do
       templ <- getQuery stmt
-      fmtErrorNamed ("SQL query contains " ++ show nParams ++ " params, but " ++
-                     show (length params) ++ " arguments given") templ params
+      fmtError ("SQL query contains " ++ show nParams ++ " params, but " ++
+                show (length params) ++ " arguments given") templ params
 
 -- | Resets a statement. This does not reset bound parameters, if any, but
 -- allows the statement to be reexecuted again by invoking 'nextRow'.
@@ -449,20 +452,12 @@ convertRow rowRes ncols = do
 lastInsertRowId :: Connection -> IO Int64
 lastInsertRowId (Connection c) = BaseD.lastInsertRowId c
 
-fmtError :: String -> Query -> [Base.SQLData] -> a
+fmtError :: Show v => String -> Query -> [v] -> a
 fmtError msg q xs =
   throw FormatError {
       fmtMessage  = msg
     , fmtQuery    = q
     , fmtParams   = map show xs
-    }
-
-fmtErrorNamed :: String -> Query -> [NamedParam] -> a
-fmtErrorNamed msg q xs =
-  throw FormatError {
-      fmtMessage = msg
-    , fmtQuery   = q
-    , fmtParams  = map (\(k := v) -> show (k, toField v)) xs
     }
 
 getQuery :: Base.Statement -> IO Query
