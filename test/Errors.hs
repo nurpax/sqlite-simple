@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, BangPatterns #-}
 
 module Errors (
     testErrorsColumns
@@ -18,22 +18,22 @@ import Database.SQLite3 (SQLError)
 
 assertResultErrorCaught :: IO a -> Assertion
 assertResultErrorCaught action = do
-  catch (action >> return False) (\(_ :: ResultError) -> return True) >>=
+  catch (action >> return False) (\((!_) :: ResultError) -> return True) >>=
     assertBool "assertResultError exc"
 
 assertFormatErrorCaught :: IO a -> Assertion
 assertFormatErrorCaught action = do
-  catch (action >> return False) (\(_ :: FormatError) -> return True) >>=
+  catch (action >> return False) (\((!_) :: FormatError) -> return True) >>=
     assertBool "assertFormatError exc"
 
 assertSQLErrorCaught :: IO a -> Assertion
 assertSQLErrorCaught action = do
-  catch (action >> return False) (\(_ :: SQLError) -> return True) >>=
+  catch (action >> return False) (\((!_) :: SQLError) -> return True) >>=
     assertBool "assertSQLError exc"
 
 assertOOBCaught :: IO a -> Assertion
 assertOOBCaught action = do
-  catch (action >> return False) (\(_ :: ArrayException) -> return True) >>=
+  catch (action >> return False) (\((!_) :: ArrayException) -> return True) >>=
     assertBool "assertOOBCaught exc"
 
 testErrorsColumns :: TestEnv -> Test

@@ -43,7 +43,7 @@ import qualified Database.SQLite3 as Base
 -- discouraged.
 newtype Connection = Connection { connectionHandle :: Base.Database }
 
-data ColumnOutOfBounds = ColumnOutOfBounds { errorColumnIndex :: Int }
+data ColumnOutOfBounds = ColumnOutOfBounds { errorColumnIndex :: !Int }
                       deriving (Eq, Show, Typeable)
 
 instance Exception ColumnOutOfBounds

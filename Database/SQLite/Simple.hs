@@ -129,9 +129,9 @@ instance Show NamedParam where
 -- This may occur if the number of \'@?@\' characters in the query
 -- string does not match the number of parameters provided.
 data FormatError = FormatError {
-      fmtMessage :: String
-    , fmtQuery :: Query
-    , fmtParams :: [String]
+      fmtMessage :: !String
+    , fmtQuery   :: !Query
+    , fmtParams  :: ![String]
     } deriving (Eq, Show, Typeable)
 
 instance Exception FormatError

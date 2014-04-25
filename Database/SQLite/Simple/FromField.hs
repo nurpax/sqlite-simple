@@ -55,18 +55,18 @@ import           Database.SQLite.Simple.Time
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.
-data ResultError = Incompatible { errSQLType :: String
-                                , errHaskellType :: String
-                                , errMessage :: String }
+data ResultError = Incompatible { errSQLType :: !String
+                                , errHaskellType :: !String
+                                , errMessage :: !String }
                  -- ^ The SQL and Haskell types are not compatible.
-                 | UnexpectedNull { errSQLType :: String
-                                  , errHaskellType :: String
-                                  , errMessage :: String }
+                 | UnexpectedNull { errSQLType :: !String
+                                  , errHaskellType :: !String
+                                  , errMessage :: !String }
                  -- ^ A SQL @NULL@ was encountered when the Haskell
                  -- type did not permit it.
-                 | ConversionFailed { errSQLType :: String
-                                    , errHaskellType :: String
-                                    , errMessage :: String }
+                 | ConversionFailed { errSQLType :: !String
+                                    , errHaskellType :: !String
+                                    , errMessage :: !String }
                  -- ^ The SQL value could not be parsed, or could not
                  -- be represented as a valid Haskell value, or an
                  -- unexpected low-level error occurred (e.g. mismatch
