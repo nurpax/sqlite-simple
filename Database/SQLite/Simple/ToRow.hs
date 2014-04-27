@@ -26,11 +26,11 @@ import Database.SQLite.Simple.Types (Only(..), (:.)(..))
 
 import Database.SQLite3 (SQLData(..))
 
--- | A collection type that can be turned into a list of SQLData
+-- | A collection type that can be turned into a list of 'SQLData'
 -- elements.
 class ToRow a where
     toRow :: a -> [SQLData]
-    -- ^ ToField a collection of values.
+    -- ^ 'ToField' a collection of values.
 
 instance ToRow () where
     toRow _ = []

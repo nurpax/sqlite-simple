@@ -329,6 +329,12 @@ query_ conn query =
 
 -- | A version of 'query' where the query parameters (placeholders)
 -- are named.
+--
+-- Example:
+--
+-- @
+-- r \<- 'queryNamed' c \"SELECT * FROM posts WHERE id=:id AND date>=:date\" [\":id\" ':=' postId, \":date\" ':=' afterDate]
+-- @
 queryNamed :: (FromRow r) => Connection -> Query -> [NamedParam] -> IO [r]
 queryNamed conn templ params =
   withStatementNamedParams conn templ params $ \stmt -> doFoldToList stmt
@@ -587,14 +593,14 @@ getQuery stmt =
 -- Example:
 --
 -- @
--- r \<- 'queryNamed' c \"SELECT id,text FROM posts WHERE id = :id AND date >= :date\" [\":id\" ':=' postId, \":date\" := afterDate]
+-- r \<- 'queryNamed' c \"SELECT id,text FROM posts WHERE id = :id AND date >= :date\" [\":id\" ':=' postId, \":date\" ':=' afterDate]
 -- @
 --
 -- Note that you can mix different value types in the same list.
 -- E.g., the following is perfectly legal:
 --
 -- @
--- [\":id\" := (3 :: Int), \":str\" := (\"foo\" :: String)]
+-- [\":id\" ':=' (3 :: Int), \":str\" ':=' (\"foo\" :: String)]
 -- @
 --
 -- The parameter name (or key) in the 'NamedParam' must match exactly
