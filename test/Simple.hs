@@ -18,6 +18,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
+-- orphan IsString instance in older byteString
+import           Data.ByteString.Lazy.Char8 ()
 import           Data.Time (UTCTime, Day)
 
 import           Common
