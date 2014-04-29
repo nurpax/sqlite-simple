@@ -46,6 +46,7 @@ tests =
     , TestLabel "Errors"    . testErrorsInvalidNamedParams
     , TestLabel "Errors"    . testErrorsWithStatement
     , TestLabel "Errors"    . testErrorsColumnName
+    , TestLabel "Errors"    . testErrorsTransaction
     , TestLabel "Utf8"      . testUtf8Simplest
     , TestLabel "Utf8"      . testBlobs
     , TestLabel "Instances" . testUserFromField

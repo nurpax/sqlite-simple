@@ -75,6 +75,8 @@ module Database.SQLite.Simple (
   , execute_
   , executeNamed
   , field
+    -- * Transactions
+  , withTransaction
     -- * Low-level statement API for stream access and prepared statements
   , openStatement
   , closeStatement
@@ -457,6 +459,22 @@ convertRow rowRes ncols = do
 -- See also <http://www.sqlite.org/c3ref/last_insert_rowid.html>.
 lastInsertRowId :: Connection -> IO Int64
 lastInsertRowId (Connection c) = BaseD.lastInsertRowId c
+
+-- | Run an IO action inside a SQL transaction started with @BEGIN
+-- TRANSACTION@.  If the action throws any kind of an exception, the
+-- transaction will be rolled back with @ROLLBACK TRANSACTION@.
+-- Otherwise the results are committed with @COMMIT TRANSACTION@.
+withTransaction :: Connection -> IO a -> IO a
+withTransaction conn action =
+  mask $ \restore -> do
+    begin
+    r <- restore action `onException` rollback
+    commit
+    return r
+  where
+    begin    = execute_ conn "BEGIN TRANSACTION"
+    commit   = execute_ conn "COMMIT TRANSACTION"
+    rollback = execute_ conn "ROLLBACK TRANSACTION"
 
 fmtError :: Show v => String -> Query -> [v] -> a
 fmtError msg q xs =

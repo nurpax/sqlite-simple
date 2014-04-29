@@ -6,6 +6,7 @@ module Errors (
   , testErrorsInvalidNamedParams
   , testErrorsWithStatement
   , testErrorsColumnName
+  , testErrorsTransaction
   ) where
 
 import Prelude hiding (catch)
@@ -99,3 +100,34 @@ testErrorsColumnName TestEnv{..} = TestCase $ do
   assertOOBCaught $
     withStatement conn "SELECT id FROM invcolumn" $ \stmt ->
       columnName stmt (ColumnIndex (-1)) >> assertFailure "Error not detected"
+
+testErrorsTransaction :: TestEnv -> Test
+testErrorsTransaction TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE trans (id INTEGER PRIMARY KEY, t TEXT)"
+  withTransaction conn $ do
+    executeNamed conn "INSERT INTO trans (t) VALUES (:txt)" [":txt" := ("foo" :: String)]
+  e <- rowExists
+  True @=? e
+  execute_ conn "DELETE FROM trans"
+  e <- rowExists
+  False @=? e
+  assertFormatErrorCaught
+    (withTransaction conn $ do
+        -- this execute should be automatically rolled back on error
+        executeNamed conn
+          "INSERT INTO trans (t) VALUES (:txt)" [":txt" := ("foo" :: String)]
+        -- intentional mistake here to hit an error & cause rollback of txn
+        executeNamed conn
+          "INSERT INTO trans (t) VALUES (:txt)" [":missing" := ("foo" :: String)])
+  e <- rowExists
+  False @=? e
+  where
+    rowExists = do
+      rows <- query_ conn "SELECT t FROM trans" :: IO [Only String]
+      case rows of
+        [Only txt] -> do
+          "foo" @=? txt
+          return True
+        [] ->
+          return False
+        _ -> error "should have only one row"
