@@ -1,3 +1,6 @@
+0.4.7.0
+	* Add `withTransaction' for running IO actions inside SQL
+	  transactions with automated rollback if any exceptions are thrown.
 0.4.6.1
 	* Fix unit test build break with older bytestring versions
 
