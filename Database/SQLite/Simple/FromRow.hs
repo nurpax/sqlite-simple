@@ -60,10 +60,10 @@ class FromRow a where
 
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
-    RowParseRO{..} <- ask
+    ncols <- asks nColumns
     (column, remaining) <- lift get
     lift (put (column + 1, tail remaining))
-    if column >= nColumns
+    if column >= ncols
     then
       lift (lift (Errors [SomeException (ColumnOutOfBounds (column+1))]))
     else do
@@ -76,9 +76,9 @@ field = fieldWith fromField
 
 numFieldsRemaining :: RowParser Int
 numFieldsRemaining = RP $ do
-  RowParseRO{..} <- ask
+  ncols <- asks nColumns
   (columnIdx,_) <- lift get
-  return $! nColumns - columnIdx
+  return $! ncols - columnIdx
 
 instance (FromField a) => FromRow (Only a) where
     fromRow = Only <$> field
