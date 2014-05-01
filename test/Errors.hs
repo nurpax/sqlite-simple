@@ -139,8 +139,11 @@ testErrorsColumnName TestEnv{..} = TestCase $ do
 testErrorsTransaction :: TestEnv -> Test
 testErrorsTransaction TestEnv{..} = TestCase $ do
   execute_ conn "CREATE TABLE trans (id INTEGER PRIMARY KEY, t TEXT)"
-  withTransaction conn $ do
+  v <- withTransaction conn $ do
     executeNamed conn "INSERT INTO trans (t) VALUES (:txt)" [":txt" := ("foo" :: String)]
+    [Only r] <- query_ conn "SELECT t FROM trans" :: IO [Only String]
+    return r
+  v @=? "foo"
   e <- rowExists
   True @=? e
   execute_ conn "DELETE FROM trans"

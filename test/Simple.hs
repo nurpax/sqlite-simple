@@ -14,12 +14,13 @@ module Simple (
   , testSimpleStrings
   ) where
 
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 -- orphan IsString instance in older byteString
 import           Data.ByteString.Lazy.Char8 ()
+import           Data.Monoid ((<>), mappend, mempty)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
 import           Data.Time (UTCTime, Day)
 
 import           Common
@@ -209,7 +210,11 @@ testSimpleQueryCov TestEnv{..} = TestCase $ do
   let str = "SELECT 1+1" :: T.Text
       q   = "SELECT 1+1" :: Query
   fromQuery q @=? str
+  show str @=? show q
+  q @=? ((read . show $ q) :: Query)
   q @=? q
+  q @=? (Query "SELECT 1" <> Query "+1")
+  q @=? foldr mappend mempty ["SELECT ", "1", "+", "1"]
   True @=? q <= q
 
 testSimpleStrings :: TestEnv -> Test
