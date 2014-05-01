@@ -9,13 +9,18 @@ module Errors (
   , testErrorsTransaction
   ) where
 
-import Prelude hiding (catch)
-import Control.Exception
+import           Prelude hiding (catch)
+import           Control.Exception
 import qualified Data.ByteString as B
-import Data.Word
+import qualified Data.ByteString.Lazy as LB
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import           Data.Word
+import           Data.Time (Day, UTCTime)
 
-import Common
-import Database.SQLite3 (SQLError)
+import           Common
+import           Database.SQLite.Simple.Types (Null)
+import           Database.SQLite3 (SQLError)
 
 assertResultErrorCaught :: IO a -> Assertion
 assertResultErrorCaught action = do
@@ -50,6 +55,30 @@ testErrorsColumns TestEnv{..} = TestCase $ do
   assertResultErrorCaught (query_ conn "SELECT id FROM cols" :: IO [(Int, String)])
   -- Mismatching types (source int,text doesn't match dst string,int
   assertResultErrorCaught (query_ conn "SELECT id, t FROM cols" :: IO [(String, Int)])
+  -- Mismatching types (source string doesn't match dst integer
+  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only Integer])
+  -- Mismatching types (sources don't match destination float/double type)
+  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only Double])
+  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only Double])
+  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only Float])
+  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only Float])
+  -- Mismatching types (sources don't match destination bool type, or is out of bounds)
+  assertResultErrorCaught (query_ conn "SELECT 'true'" :: IO [Only Bool])
+  assertResultErrorCaught (query_ conn "SELECT 2" :: IO [Only Bool])
+  -- Mismatching types (sources don't match destination string types (text, string)
+  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only T.Text])
+  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only LT.Text])
+  assertResultErrorCaught (query_ conn "SELECT 1.0" :: IO [Only T.Text])
+  assertResultErrorCaught (query_ conn "SELECT 1.0" :: IO [Only LT.Text])
+  -- Mismatching types (sources don't match destination string types (time/date)
+  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only UTCTime])
+  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only Day])
+  -- Mismatching types (sources don't match destination bytestring)
+  [Only (_ :: B.ByteString)] <-  query_ conn "SELECT X'3177'"
+  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only B.ByteString])
+  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only LB.ByteString])
+  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only B.ByteString])
+  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only LB.ByteString])
   -- Trying to get a blob into a string
   let d = B.pack ([0..127] :: [Word8])
   execute_ conn "CREATE TABLE cols_blobs (id INTEGER, b BLOB)"
@@ -62,6 +91,12 @@ testErrorsColumns TestEnv{..} = TestCase $ do
   execute_ conn "INSERT INTO cols_bools (b) VALUES (3)"
   assertResultErrorCaught
     (do [Only _t1] <- query_ conn "SELECT b FROM cols_bools" :: IO [Only Bool]
+        return ())
+  [Only (nullVal :: Null)] <- query_ conn "SELECT NULL"
+  False @=? nullVal == nullVal
+  False @=? nullVal /= nullVal
+  assertResultErrorCaught
+    (do [Only (_t1 :: Null)] <- query_ conn "SELECT 1" :: IO [Only Null]
         return ())
 
 testErrorsInvalidParams :: TestEnv -> Test
