@@ -22,24 +22,29 @@ import           Common
 import           Database.SQLite.Simple.Types (Null)
 import           Database.SQLite3 (SQLError)
 
+-- The "length (show e) `seq` .." trickery below is to force evaluate
+-- the contents of error messages.  Another option would be to log
+-- them (would be useful), but I don't know if HUnit has any logging
+-- mechanisms.  Just printing them as is will look like the tests are
+-- hitting errors and would be confusing.
 assertResultErrorCaught :: IO a -> Assertion
 assertResultErrorCaught action = do
-  catch (action >> return False) (\((!_) :: ResultError) -> return True) >>=
+  catch (action >> return False) (\(e :: ResultError) -> length (show e) `seq` return True) >>=
     assertBool "assertResultError exc"
 
 assertFormatErrorCaught :: IO a -> Assertion
 assertFormatErrorCaught action = do
-  catch (action >> return False) (\((!_) :: FormatError) -> return True) >>=
+  catch (action >> return False) (\(e :: FormatError) -> length (show e) `seq` return True) >>=
     assertBool "assertFormatError exc"
 
 assertSQLErrorCaught :: IO a -> Assertion
 assertSQLErrorCaught action = do
-  catch (action >> return False) (\((!_) :: SQLError) -> return True) >>=
+  catch (action >> return False) (\(e :: SQLError) -> length (show e) `seq` return True) >>=
     assertBool "assertSQLError exc"
 
 assertOOBCaught :: IO a -> Assertion
 assertOOBCaught action = do
-  catch (action >> return False) (\((!_) :: ArrayException) -> return True) >>=
+  catch (action >> return False) (\(e :: ArrayException) -> length (show e) `seq` return True) >>=
     assertBool "assertOOBCaught exc"
 
 testErrorsColumns :: TestEnv -> Test
@@ -121,6 +126,9 @@ testErrorsInvalidNamedParams TestEnv{..} = TestCase $ do
   -- execute.  This should cause an error.
   assertFormatErrorCaught
     (queryNamed conn "SELECT :foo + :bar" [":foo" := (1 :: Int)] :: IO [Only Int])
+  -- Can't use named params in SQL string with the unnamed query/exec variants
+  assertFormatErrorCaught
+    (query conn "SELECT :foo" (Only (1 :: Int)) :: IO [Only Int])
 
 testErrorsWithStatement :: TestEnv -> Test
 testErrorsWithStatement TestEnv{..} = TestCase $ do
