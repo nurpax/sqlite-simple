@@ -82,6 +82,7 @@ module Database.SQLite.Simple (
   , closeStatement
   , withStatement
   , bind
+  , bindNamed
   , reset
   , columnName
   , withBind
