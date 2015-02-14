@@ -88,8 +88,10 @@ module Database.SQLite.Simple (
   , withBind
   , nextRow
     -- ** Exceptions
-  , FormatError(fmtMessage, fmtQuery, fmtParams)
-  , ResultError(errSQLType, errHaskellType, errMessage)
+  , FormatError(..)
+  , ResultError(..)
+  , Base.SQLError(..)
+  , Base.Error(..)
   ) where
 
 import           Control.Applicative
