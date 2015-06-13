@@ -64,6 +64,7 @@ module Database.SQLite.Simple (
     -- * Queries that return results
   , query
   , query_
+  , queryWith_
   , queryNamed
   , lastInsertRowId
     -- * Queries that stream results
@@ -305,9 +306,9 @@ execute conn template qs =
     void . Base.step $ stmt
 
 
-doFoldToList :: (FromRow row) => Statement -> IO [row]
-doFoldToList stmt =
-  fmap reverse $ doFold stmt [] (\acc e -> return (e : acc))
+doFoldToList :: RowParser row -> Statement -> IO [row]
+doFoldToList fromRow_ stmt =
+  fmap reverse $ doFold fromRow_ stmt [] (\acc e -> return (e : acc))
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. All results are retrieved and converted before this
@@ -325,12 +326,17 @@ query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn templ qs =
   withStatementParams conn templ qs $ \stmt ->
-    doFoldToList stmt
+    doFoldToList fromRow stmt
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
-query_ conn query =
-  withStatement conn query doFoldToList
+query_ = queryWith_ fromRow
+
+-- | A version of 'query' that does not perform query substitution and
+-- takes an explicit 'RowParser'.
+queryWith_ :: RowParser r -> Connection -> Query -> IO [r]
+queryWith_ fromRow_ conn query =
+  withStatement conn query (doFoldToList fromRow_)
 
 -- | A version of 'query' where the query parameters (placeholders)
 -- are named.
@@ -342,7 +348,7 @@ query_ conn query =
 -- @
 queryNamed :: (FromRow r) => Connection -> Query -> [NamedParam] -> IO [r]
 queryNamed conn templ params =
-  withStatementNamedParams conn templ params $ \stmt -> doFoldToList stmt
+  withStatementNamedParams conn templ params $ \stmt -> doFoldToList fromRow stmt
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
@@ -378,7 +384,7 @@ fold :: ( FromRow row, ToRow params )
         -> IO a
 fold conn query params initalState action =
   withStatementParams conn query params $ \stmt ->
-    doFold stmt initalState action
+    doFold fromRow stmt initalState action
 
 -- | A version of 'fold' which does not perform parameter substitution.
 fold_ :: ( FromRow row )
@@ -389,7 +395,7 @@ fold_ :: ( FromRow row )
         -> IO a
 fold_ conn query initalState action =
   withStatement conn query $ \stmt ->
-    doFold stmt initalState action
+    doFold fromRow stmt initalState action
 
 -- | A version of 'fold' where the query parameters (placeholders) are
 -- named.
@@ -402,14 +408,14 @@ foldNamed :: ( FromRow row )
           -> IO a
 foldNamed conn query params initalState action =
   withStatementNamedParams conn query params $ \stmt ->
-    doFold stmt initalState action
+    doFold fromRow stmt initalState action
 
-doFold :: (FromRow row) => Statement ->  a -> (a -> row -> IO a) -> IO a
-doFold stmt initState action =
+doFold :: RowParser row -> Statement ->  a -> (a -> row -> IO a) -> IO a
+doFold fromRow_ stmt initState action =
   loop initState
   where
     loop val = do
-      maybeNextRow <- nextRow stmt
+      maybeNextRow <- nextRowWith fromRow_ stmt
       case maybeNextRow of
         Just row  -> do
           val' <- action val row
@@ -418,20 +424,23 @@ doFold stmt initState action =
 
 -- | Extracts the next row from the prepared statement.
 nextRow :: (FromRow r) => Statement -> IO (Maybe r)
-nextRow (Statement stmt) = do
+nextRow = nextRowWith fromRow
+
+nextRowWith :: RowParser r -> Statement -> IO (Maybe r)
+nextRowWith fromRow_ (Statement stmt) = do
   statRes <- Base.step stmt
   case statRes of
     Base.Row -> do
       rowRes <- Base.columns stmt
       let nCols = length rowRes
-      row <- convertRow rowRes nCols
+      row <- convertRow fromRow_ rowRes nCols
       return $ Just row
     Base.Done -> return Nothing
 
-convertRow :: (FromRow r) => [Base.SQLData] -> Int -> IO r
-convertRow rowRes ncols = do
+convertRow :: RowParser r -> [Base.SQLData] -> Int -> IO r
+convertRow fromRow_ rowRes ncols = do
   let rw = RowParseRO ncols
-  case runStateT (runReaderT (unRP fromRow) rw) (0, rowRes) of
+  case runStateT (runReaderT (unRP fromRow_) rw) (0, rowRes) of
     Ok (val,(col,_))
        | col == ncols -> return val
        | otherwise -> errorColumnMismatch (ColumnOutOfBounds col)
