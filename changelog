@@ -1,3 +1,9 @@
+0.4.9.0
+	* Provide queryWith_ to allow more fine-grained access to
+	  constructing queries.
+	* Expose error data constructors (pull request #42)
+	* Improve haddocks
+
 0.4.8.0
 	* Export `bindNamed'
 
