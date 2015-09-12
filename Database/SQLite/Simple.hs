@@ -1,4 +1,8 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, GeneralizedNewtypeDeriving, ScopedTypeVariables, GADTs #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -97,24 +101,24 @@ module Database.SQLite.Simple (
 
 import           Control.Applicative
 import           Control.Exception
-import           Control.Monad (void, when)
+import           Control.Monad                    (void, when)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
-import           Data.Int (Int64)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import           Data.Typeable (Typeable)
+import           Data.Int                         (Int64)
+import qualified Data.Text                        as T
+import qualified Data.Text.Encoding               as TE
+import           Data.Typeable                    (Typeable)
 import           Database.SQLite.Simple.Types
-import qualified Database.SQLite3 as Base
-import qualified Database.SQLite3.Direct as BaseD
+import qualified Database.SQLite3                 as Base
+import qualified Database.SQLite3.Direct          as BaseD
 
 
-import           Database.SQLite.Simple.FromField (ResultError(..))
+import           Database.SQLite.Simple.FromField (ResultError (..))
+import           Database.SQLite.Simple.FromRow
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
-import           Database.SQLite.Simple.ToRow (ToRow(..))
-import           Database.SQLite.Simple.ToField (ToField(..))
-import           Database.SQLite.Simple.FromRow
+import           Database.SQLite.Simple.ToField   (ToField (..))
+import           Database.SQLite.Simple.ToRow     (ToRow (..))
 
 -- | An SQLite prepared statement.
 newtype Statement = Statement Base.Statement
@@ -419,7 +423,7 @@ doFold fromRow_ stmt initState action =
       case maybeNextRow of
         Just row  -> do
           val' <- action val row
-          loop val'
+          val' `seq` loop val'
         Nothing   -> return val
 
 -- | Extracts the next row from the prepared statement.
