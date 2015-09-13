@@ -419,7 +419,7 @@ doFold fromRow_ stmt initState action =
       case maybeNextRow of
         Just row  -> do
           val' <- action val row
-          loop val'
+          val' `seq` loop val'
         Nothing   -> return val
 
 -- | Extracts the next row from the prepared statement.
