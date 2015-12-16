@@ -562,7 +562,8 @@ getQuery stmt =
 -- >
 -- > hello = do
 -- >   conn <- open "test.db"
--- >   query conn "select 2 + 2"
+-- >   [[x]] <- query_ conn "select 2 + 2"
+-- >   print x
 --
 -- A 'Query' value does not represent the actual query that will be
 -- executed, but is a template for constructing the final query.
