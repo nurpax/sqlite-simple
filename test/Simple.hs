@@ -12,6 +12,7 @@ module Simple (
   , testSimpleUTCTimeParams
   , testSimpleQueryCov
   , testSimpleStrings
+  , testSimpleChanges
   ) where
 
 import qualified Data.ByteString as BS
@@ -235,3 +236,22 @@ testSimpleStrings TestEnv{..} = TestCase $ do
   s @=? "strBsPLazy"
   [Only s] <- query conn "SELECT ?" (Only ("strBsPLazy2" :: BS.ByteString)) :: IO [Only LBS.ByteString]
   s @=? "strBsPLazy2"
+
+testSimpleChanges :: TestEnv -> Test
+testSimpleChanges TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE testchanges (id INTEGER PRIMARY KEY, t TEXT)"
+  execute conn "INSERT INTO testchanges(t) VALUES (?)" (Only ("test string" :: String))
+  numChanges <- changes conn
+  assertEqual "changed/inserted rows" 1 numChanges
+  execute conn "INSERT INTO testchanges(t) VALUES (?)" (Only ("test string 2" :: String))
+  numChanges <- changes conn
+  assertEqual "changed/inserted rows" 1 numChanges
+  execute_ conn "UPDATE testchanges SET t = 'foo' WHERE id = 1"
+  numChanges <- changes conn
+  assertEqual "changed/inserted rows" 1 numChanges
+  execute_ conn "UPDATE testchanges SET t = 'foo' WHERE id = 100"
+  numChanges <- changes conn
+  assertEqual "changed/inserted rows" 0 numChanges
+  execute_ conn "UPDATE testchanges SET t = 'foo'"
+  numChanges <- changes conn
+  assertEqual "changed/inserted rows" 2 numChanges

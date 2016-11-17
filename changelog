@@ -1,3 +1,6 @@
+0.4.10.0
+	* Expose sqlite3_changes/total_changes
+
 0.4.9.0
 	* Provide queryWith_ to allow more fine-grained access to
 	  constructing queries.

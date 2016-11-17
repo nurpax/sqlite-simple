@@ -67,6 +67,8 @@ module Database.SQLite.Simple (
   , queryWith_
   , queryNamed
   , lastInsertRowId
+  , changes
+  , totalChanges
     -- * Queries that stream results
   , fold
   , fold_
@@ -471,6 +473,20 @@ convertRow fromRow_ rowRes ncols = do
 -- See also <http://www.sqlite.org/c3ref/last_insert_rowid.html>.
 lastInsertRowId :: Connection -> IO Int64
 lastInsertRowId (Connection c) = BaseD.lastInsertRowId c
+
+-- | <http://www.sqlite.org/c3ref/changes.html>
+--
+-- Return the number of rows that were changed, inserted, or deleted
+-- by the most recent @INSERT@, @DELETE@, or @UPDATE@ statement.
+changes :: Connection -> IO Int
+changes (Connection c) = BaseD.changes c
+
+-- | <http://www.sqlite.org/c3ref/total_changes.html>
+--
+-- Return the total number of row changes caused by @INSERT@, @DELETE@,
+-- or @UPDATE@ statements since the 'Database' was opened.
+totalChanges :: Connection -> IO Int
+totalChanges (Connection c) = BaseD.totalChanges c
 
 -- | Run an IO action inside a SQL transaction started with @BEGIN
 -- TRANSACTION@.  If the action throws any kind of an exception, the
