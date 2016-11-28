@@ -76,6 +76,7 @@ module Database.SQLite.Simple (
     -- * Statements that do not return results
   , execute
   , execute_
+  , executeMany
   , executeNamed
   , field
     -- * Transactions
@@ -99,7 +100,7 @@ module Database.SQLite.Simple (
 
 import           Control.Applicative
 import           Control.Exception
-import           Control.Monad (void, when)
+import           Control.Monad (void, when, forM_)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 import           Data.Int (Int64)
@@ -112,11 +113,11 @@ import qualified Database.SQLite3.Direct as BaseD
 
 
 import           Database.SQLite.Simple.FromField (ResultError(..))
+import           Database.SQLite.Simple.FromRow
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
-import           Database.SQLite.Simple.ToRow (ToRow(..))
 import           Database.SQLite.Simple.ToField (ToField(..))
-import           Database.SQLite.Simple.FromRow
+import           Database.SQLite.Simple.ToRow (ToRow(..))
 
 -- | An SQLite prepared statement.
 newtype Statement = Statement Base.Statement
@@ -306,6 +307,17 @@ execute :: (ToRow q) => Connection -> Query -> q -> IO ()
 execute conn template qs =
   withStatementParams conn template qs $ \(Statement stmt) ->
     void . Base.step $ stmt
+
+-- | Execute a multi-row @INSERT@, @UPDATE@, or other SQL query that is not
+-- expected to return results.
+--
+-- Throws 'FormatError' if the query could not be formatted correctly.
+executeMany :: ToRow q => Connection -> Query -> [q] -> IO ()
+executeMany conn template rows = withStatement conn template $ \stmt -> do
+    let Statement stmt' = stmt
+    forM_ rows $ \row ->
+        withBind stmt row
+            (void . Base.step $ stmt')
 
 
 doFoldToList :: RowParser row -> Statement -> IO [row]

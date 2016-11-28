@@ -5,17 +5,17 @@ import Control.Monad     (when)
 import System.Exit       (exitFailure)
 import System.IO
 
-import Simple
-import ParamConv
-import Errors
-import Utf8Strings
-import UserInstances
-import TestImports()
-import Fold
-import Statement
 import Debug
 import DirectSqlite
+import Errors
+import Fold
+import ParamConv
+import Simple
+import Statement
+import TestImports()
 import TestImports
+import UserInstances
+import Utf8Strings
 
 tests :: [TestEnv -> Test]
 tests =
@@ -25,6 +25,7 @@ tests =
     , TestLabel "Simple"    . testSimpleTime
     , TestLabel "Simple"    . testSimpleTimeFract
     , TestLabel "Simple"    . testSimpleInsertId
+    , TestLabel "Simple"    . testSimpleMultiInsert
     , TestLabel "Simple"    . testSimpleUTCTime
     , TestLabel "Simple"    . testSimpleUTCTimeTZ
     , TestLabel "Simple"    . testSimpleUTCTimeParams
