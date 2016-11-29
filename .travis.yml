@@ -1,8 +1,4 @@
 language: haskell
-before_install:
-  - cabal install hpc-coveralls
 script:
-  - cabal configure --enable-tests --enable-library-coverage && cabal build
+  - cabal configure --enable-tests && cabal build
   - run-cabal-test
-after_script:
-  - hpc-coveralls --exclude-dir=test test
