@@ -313,10 +313,10 @@ execute conn template qs =
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
 executeMany :: ToRow q => Connection -> Query -> [q] -> IO ()
-executeMany conn template rows = withStatement conn template $ \stmt -> do
+executeMany conn template paramRows = withStatement conn template $ \stmt -> do
   let Statement stmt' = stmt
-  forM_ rows $ \row ->
-    withBind stmt row
+  forM_ paramRows $ \params ->
+    withBind stmt params
       (void . Base.step $ stmt')
 
 
