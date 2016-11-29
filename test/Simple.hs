@@ -7,6 +7,7 @@ module Simple (
   , testSimpleTime
   , testSimpleTimeFract
   , testSimpleInsertId
+  , testSimpleMultiInsert
   , testSimpleUTCTime
   , testSimpleUTCTimeTZ
   , testSimpleUTCTimeParams
@@ -139,6 +140,16 @@ testSimpleInsertId TestEnv{..} = TestCase $ do
   (Only "test string") @=? (head rows)
   [Only row] <- query conn "SELECT t FROM test_row_id WHERE id = ?" (Only (2 :: Int)) :: IO [Only String]
   "test2" @=? row
+
+testSimpleMultiInsert :: TestEnv -> Test
+testSimpleMultiInsert TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE test_multi_insert (id INTEGER PRIMARY KEY, t1 TEXT, t2 TEXT)"
+  executeMany conn "INSERT INTO test_multi_insert (t1, t2) VALUES (?, ?)" ([("foo", "bar"), ("baz", "bat")] :: [(String, String)])
+  id2 <- lastInsertRowId conn
+  2 @=? id2
+
+  rows <- query_ conn "SELECT id,t1,t2 FROM test_multi_insert" :: IO [(Int, String, String)]
+  [(1, "foo", "bar"), (2, "baz", "bat")] @=? rows
 
 testSimpleUTCTime :: TestEnv -> Test
 testSimpleUTCTime TestEnv{..} = TestCase $ do
