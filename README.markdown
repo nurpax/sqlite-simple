@@ -23,8 +23,6 @@ C](http://nurpax.github.io/posts/2013-08-17-sqlite-simple-benchmarking.html).
 
 [![Build Status](https://secure.travis-ci.org/nurpax/sqlite-simple.png)](http://travis-ci.org/nurpax/sqlite-simple)
 
-[![Coverage Status](https://coveralls.io/repos/nurpax/sqlite-simple/badge.png?branch=master)](https://coveralls.io/r/nurpax/sqlite-simple?branch=master)
-
 Installation
 ------------
 
