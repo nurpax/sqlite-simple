@@ -1,4 +1,3 @@
 language: haskell
 script:
-  - cabal configure --enable-tests && cabal build
-  - run-cabal-test
+  - cabal configure --enable-tests && cabal build && cabal test
