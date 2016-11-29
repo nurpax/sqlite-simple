@@ -314,10 +314,10 @@ execute conn template qs =
 -- Throws 'FormatError' if the query could not be formatted correctly.
 executeMany :: ToRow q => Connection -> Query -> [q] -> IO ()
 executeMany conn template rows = withStatement conn template $ \stmt -> do
-    let Statement stmt' = stmt
-    forM_ rows $ \row ->
-        withBind stmt row
-            (void . Base.step $ stmt')
+  let Statement stmt' = stmt
+  forM_ rows $ \row ->
+    withBind stmt row
+      (void . Base.step $ stmt')
 
 
 doFoldToList :: RowParser row -> Statement -> IO [row]
