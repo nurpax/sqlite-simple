@@ -64,6 +64,7 @@ module Database.SQLite.Simple (
     -- * Queries that return results
   , query
   , query_
+  , queryWith
   , queryWith_
   , queryNamed
   , lastInsertRowId
@@ -338,13 +339,16 @@ doFoldToList fromRow_ stmt =
 -- * 'ResultError': result conversion failed.
 query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
-query conn templ qs =
-  withStatementParams conn templ qs $ \stmt ->
-    doFoldToList fromRow stmt
+query = queryWith fromRow
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
 query_ = queryWith_ fromRow
+
+-- | A version of 'query' that takes an explicit 'RowParser'.
+queryWith :: (ToRow q) => RowParser r -> Connection -> Query -> q -> IO [r]
+queryWith fromRow_ conn templ qs =
+  withStatementParams conn templ qs $ \stmt -> doFoldToList fromRow_ stmt
 
 -- | A version of 'query' that does not perform query substitution and
 -- takes an explicit 'RowParser'.
