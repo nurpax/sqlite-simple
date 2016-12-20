@@ -1,5 +1,5 @@
 Name:                sqlite-simple
-Version:             0.4.12.0
+Version:             0.4.12.1
 Synopsis:            Mid-Level SQLite client library
 Description:
     Mid-level SQLite client library, based on postgresql-simple.
