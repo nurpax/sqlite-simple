@@ -441,6 +441,9 @@ doFold fromRow_ stmt initState action =
         Nothing   -> return val
 
 -- | Extracts the next row from the prepared statement.
+--
+-- Note: If you're using 'nextRow' for INSERTs, you can use the 'FromRow ()'
+-- instance to mark that no columns are returned from the query.
 nextRow :: (FromRow r) => Statement -> IO (Maybe r)
 nextRow = nextRowWith fromRow
 

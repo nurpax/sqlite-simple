@@ -56,6 +56,7 @@ tests =
     , TestLabel "Statement" . testBind
     , TestLabel "Statement" . testDoubleBind
     , TestLabel "Statement" . testPreparedStatements
+    , TestLabel "Statement" . testPreparedStatementsUnit
     , TestLabel "Debug"     . testDebugTracing
     , TestLabel "Direct"    . testDirectSqlite
     , TestLabel "Imports"   . testImports

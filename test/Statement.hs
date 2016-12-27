@@ -1,9 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 
 module Statement (
     testBind
   , testDoubleBind
   , testPreparedStatements
+  , testPreparedStatementsUnit
   ) where
 
 import Common
@@ -48,3 +49,17 @@ testPreparedStatements TestEnv{..} = TestCase $ do
           Just (Only r) <- nextRow stmt
           Nothing <- nextRow stmt :: IO (Maybe (Only String))
           return r
+
+testPreparedStatementsUnit :: TestEnv -> Test
+testPreparedStatementsUnit TestEnv{..} = TestCase $ do
+  let strings = ["foo" :: String, "bar"]
+  execute_ conn "CREATE TABLE psvoid (id INTEGER PRIMARY KEY, t TEXT)"
+  withStatement conn "INSERT INTO psvoid (t) VALUES (?)" $ \stmt ->
+    mapM_ (insertOne stmt) strings
+  elems :: [Only String] <- query_ conn "SELECT t FROM psvoid"
+  assertEqual "inserts must've added foo+bar" (map Only strings) elems
+  where
+    insertOne stmt rowId =
+      withBind stmt (Only rowId) $ do
+        Nothing <- nextRow stmt :: IO (Maybe ())
+        return ()

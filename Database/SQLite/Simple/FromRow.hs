@@ -71,6 +71,15 @@ fieldWith fieldP = RP $ do
           field = Field r column
       lift (lift (fieldP field))
 
+-- An empty row parser that just checks that the query returns zero columns.
+-- This is used for the () fromRow instance.
+unitRow :: RowParser ()
+unitRow = RP $ do
+  ncols <- asks nColumns
+  if ncols >= 0 then
+    lift (lift (Errors [SomeException (ColumnOutOfBounds 1)]))
+  else return ()
+
 field :: FromField a => RowParser a
 field = fieldWith fromField
 
@@ -134,3 +143,6 @@ instance FromField a => FromRow [a] where
 
 instance (FromRow a, FromRow b) => FromRow (a :. b) where
     fromRow = (:.) <$> fromRow <*> fromRow
+
+instance FromRow () where
+    fromRow = unitRow
