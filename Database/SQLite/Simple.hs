@@ -82,6 +82,7 @@ module Database.SQLite.Simple (
   , field
     -- * Transactions
   , withTransaction
+  , withImmediateTransaction
     -- * Low-level statement API for stream access and prepared statements
   , openStatement
   , closeStatement
@@ -481,6 +482,22 @@ convertRow fromRow_ rowRes ncols = do
       | otherwise        = bs
       where
         bs = T.pack $ show sql
+
+-- | Run an IO action inside a SQL transaction started with @BEGIN
+-- IMMEDIATE TRANSACTION@.  If the action throws any kind of an exception, the
+-- transaction will be rolled back with @ROLLBACK TRANSACTION@.
+-- Otherwise the results are committed with @COMMIT TRANSACTION@.
+withImmediateTransaction :: Connection -> IO a -> IO a
+withImmediateTransaction conn action =
+  mask $ \restore -> do
+    begin
+    r <- restore action `onException` rollback
+    commit
+    return r
+  where
+    begin    = execute_ conn "BEGIN IMMEDIATE TRANSACTION"
+    commit   = execute_ conn "COMMIT TRANSACTION"
+    rollback = execute_ conn "ROLLBACK TRANSACTION"
 
 
 -- | Returns the rowid of the most recent successful INSERT on the
