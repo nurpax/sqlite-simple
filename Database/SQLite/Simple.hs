@@ -83,6 +83,7 @@ module Database.SQLite.Simple (
     -- * Transactions
   , withTransaction
   , withImmediateTransaction
+  , withExclusiveTransaction
     -- * Low-level statement API for stream access and prepared statements
   , openStatement
   , closeStatement
@@ -502,15 +503,25 @@ withTransactionPrivate conn action ttype =
 
 
 -- | Run an IO action inside a SQL transaction started with @BEGIN IMMEDIATE
--- TRANSACTION@, which immediately blocks all other writers.  The default
--- SQLite3 @BEGIN TRANSACTION@ does not acquire the write lock on @BEGIN@ nor
--- on @SELECT@ but waits until you try to change data.  If the action throws
--- any kind of an exception, the transaction will be rolled back with @ROLLBACK
--- TRANSACTION@.  Otherwise the results are committed with @COMMIT
--- TRANSACTION@.
+-- TRANSACTION@, which immediately blocks all other database connections from
+-- writing.  The default SQLite3 @BEGIN TRANSACTION@ does not acquire the write
+-- lock on @BEGIN@ nor on @SELECT@ but waits until you try to change data.  If
+-- the action throws any kind of an exception, the transaction will be rolled
+-- back with @ROLLBACK TRANSACTION@.  Otherwise the results are committed with
+-- @COMMIT TRANSACTION@.
 withImmediateTransaction :: Connection -> IO a -> IO a
 withImmediateTransaction conn action =
   withTransactionPrivate conn action Immediate
+
+-- | Run an IO action inside a SQL transaction started with @BEGIN EXCLUSIVE
+-- TRANSACTION@, which immediately blocks all other database connecdtions from
+-- writing, and most other connections from reading.  (Only read_uncommitted
+-- connections are allowed to read.) If the action throws any kind of an
+-- exception, the transaction will be rolled back with @ROLLBACK TRANSACTION@.
+-- Otherwise the results are committed with @COMMIT TRANSACTION@.
+withExclusiveTransaction :: Connection -> IO a -> IO a
+withExclusiveTransaction conn action =
+  withTransactionPrivate conn action Exclusive
 
 -- | Returns the rowid of the most recent successful INSERT on the
 -- given database connection.
