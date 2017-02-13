@@ -90,6 +90,7 @@ module Database.SQLite.Simple (
   , bindNamed
   , reset
   , columnName
+  , columnCount
   , withBind
   , nextRow
     -- ** Exceptions
@@ -245,6 +246,10 @@ columnName (Statement stmt) (ColumnIndex n) = BaseD.columnName stmt n >>= takeUt
     takeUtf8 (Just s) = return $ unUtf8 s
     takeUtf8 Nothing  =
       throwIO (IndexOutOfBounds ("Column index " ++ show n ++ " out of bounds"))
+
+-- | Return number of columns in the query
+columnCount :: Statement -> IO ColumnIndex
+columnCount (Statement stmt) = ColumnIndex <$> BaseD.columnCount stmt
 
 -- | Binds parameters to a prepared statement, and 'reset's the statement when
 -- the callback completes, even in the presence of exceptions.
