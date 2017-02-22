@@ -7,6 +7,8 @@ module Errors (
   , testErrorsWithStatement
   , testErrorsColumnName
   , testErrorsTransaction
+  , testErrorsImmediateTransaction
+  , testErrorsExclusiveTransaction
   ) where
 
 import           Prelude hiding (catch)
@@ -170,6 +172,74 @@ testErrorsTransaction TestEnv{..} = TestCase $ do
   where
     rowExists = do
       rows <- query_ conn "SELECT t FROM trans" :: IO [Only String]
+      case rows of
+        [Only txt] -> do
+          "foo" @=? txt
+          return True
+        [] ->
+          return False
+        _ -> error "should have only one row"
+
+testErrorsImmediateTransaction :: TestEnv -> Test
+testErrorsImmediateTransaction TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE itrans (id INTEGER PRIMARY KEY, t TEXT)"
+  v <- withImmediateTransaction conn $ do
+    executeNamed conn "INSERT INTO itrans (t) VALUES (:txt)" [":txt" := ("foo" :: String)]
+    [Only r] <- query_ conn "SELECT t FROM itrans" :: IO [Only String]
+    return r
+  v @=? "foo"
+  e <- rowExists
+  True @=? e
+  execute_ conn "DELETE FROM itrans"
+  e <- rowExists
+  False @=? e
+  assertFormatErrorCaught
+    (withImmediateTransaction conn $ do
+        -- this execute should be automatically rolled back on error
+        executeNamed conn
+          "INSERT INTO itrans (t) VALUES (:txt)" [":txt" := ("foo" :: String)]
+        -- intentional mistake here to hit an error & cause rollback of txn
+        executeNamed conn
+          "INSERT INTO itrans (t) VALUES (:txt)" [":missing" := ("foo" :: String)])
+  e <- rowExists
+  False @=? e
+  where
+    rowExists = do
+      rows <- query_ conn "SELECT t FROM itrans" :: IO [Only String]
+      case rows of
+        [Only txt] -> do
+          "foo" @=? txt
+          return True
+        [] ->
+          return False
+        _ -> error "should have only one row"
+
+testErrorsExclusiveTransaction :: TestEnv -> Test
+testErrorsExclusiveTransaction TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE etrans (id INTEGER PRIMARY KEY, t TEXT)"
+  v <- withExclusiveTransaction conn $ do
+    executeNamed conn "INSERT INTO etrans (t) VALUES (:txt)" [":txt" := ("foo" :: String)]
+    [Only r] <- query_ conn "SELECT t FROM etrans" :: IO [Only String]
+    return r
+  v @=? "foo"
+  e <- rowExists
+  True @=? e
+  execute_ conn "DELETE FROM etrans"
+  e <- rowExists
+  False @=? e
+  assertFormatErrorCaught
+    (withExclusiveTransaction conn $ do
+        -- this execute should be automatically rolled back on error
+        executeNamed conn
+          "INSERT INTO etrans (t) VALUES (:txt)" [":txt" := ("foo" :: String)]
+        -- intentional mistake here to hit an error & cause rollback of txn
+        executeNamed conn
+          "INSERT INTO etrans (t) VALUES (:txt)" [":missing" := ("foo" :: String)])
+  e <- rowExists
+  False @=? e
+  where
+    rowExists = do
+      rows <- query_ conn "SELECT t FROM etrans" :: IO [Only String]
       case rows of
         [Only txt] -> do
           "foo" @=? txt

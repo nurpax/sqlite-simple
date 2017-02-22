@@ -82,6 +82,8 @@ module Database.SQLite.Simple (
   , field
     -- * Transactions
   , withTransaction
+  , withImmediateTransaction
+  , withExclusiveTransaction
     -- * Low-level statement API for stream access and prepared statements
   , openStatement
   , closeStatement
@@ -130,6 +132,8 @@ newtype ColumnIndex = ColumnIndex BaseD.ColumnIndex
 
 data NamedParam where
     (:=) :: (ToField v) => T.Text -> v -> NamedParam
+
+data TransactionType = Deferred | Immediate | Exclusive
 
 infixr 3 :=
 
@@ -487,6 +491,42 @@ convertRow fromRow_ rowRes ncols = do
       where
         bs = T.pack $ show sql
 
+withTransactionPrivate :: Connection -> IO a -> TransactionType -> IO a
+withTransactionPrivate conn action ttype =
+  mask $ \restore -> do
+    begin
+    r <- restore action `onException` rollback
+    commit
+    return r
+  where
+    begin    = case ttype of
+                 Deferred  -> execute_ conn "BEGIN TRANSACTION"
+                 Immediate -> execute_ conn "BEGIN IMMEDIATE TRANSACTION"
+                 Exclusive -> execute_ conn "BEGIN EXCLUSIVE TRANSACTION"
+    commit   = execute_ conn "COMMIT TRANSACTION"
+    rollback = execute_ conn "ROLLBACK TRANSACTION"
+
+
+-- | Run an IO action inside a SQL transaction started with @BEGIN IMMEDIATE
+-- TRANSACTION@, which immediately blocks all other database connections from
+-- writing.  The default SQLite3 @BEGIN TRANSACTION@ does not acquire the write
+-- lock on @BEGIN@ nor on @SELECT@ but waits until you try to change data.  If
+-- the action throws any kind of an exception, the transaction will be rolled
+-- back with @ROLLBACK TRANSACTION@.  Otherwise the results are committed with
+-- @COMMIT TRANSACTION@.
+withImmediateTransaction :: Connection -> IO a -> IO a
+withImmediateTransaction conn action =
+  withTransactionPrivate conn action Immediate
+
+-- | Run an IO action inside a SQL transaction started with @BEGIN EXCLUSIVE
+-- TRANSACTION@, which immediately blocks all other database connecdtions from
+-- writing, and most other connections from reading.  (Only read_uncommitted
+-- connections are allowed to read.) If the action throws any kind of an
+-- exception, the transaction will be rolled back with @ROLLBACK TRANSACTION@.
+-- Otherwise the results are committed with @COMMIT TRANSACTION@.
+withExclusiveTransaction :: Connection -> IO a -> IO a
+withExclusiveTransaction conn action =
+  withTransactionPrivate conn action Exclusive
 
 -- | Returns the rowid of the most recent successful INSERT on the
 -- given database connection.
@@ -515,15 +555,7 @@ totalChanges (Connection c) = BaseD.totalChanges c
 -- Otherwise the results are committed with @COMMIT TRANSACTION@.
 withTransaction :: Connection -> IO a -> IO a
 withTransaction conn action =
-  mask $ \restore -> do
-    begin
-    r <- restore action `onException` rollback
-    commit
-    return r
-  where
-    begin    = execute_ conn "BEGIN TRANSACTION"
-    commit   = execute_ conn "COMMIT TRANSACTION"
-    rollback = execute_ conn "ROLLBACK TRANSACTION"
+  withTransactionPrivate conn action Deferred
 
 fmtError :: Show v => String -> Query -> [v] -> a
 fmtError msg q xs =
