@@ -53,7 +53,7 @@ module Database.SQLite.Simple (
   , Only(..)
   , (:.)(..)
   , Base.SQLData(..)
-  , Statement
+  , Statement(..)
   , ColumnIndex(..)
   , NamedParam(..)
     -- * Connections
@@ -124,7 +124,7 @@ import           Database.SQLite.Simple.ToField (ToField(..))
 import           Database.SQLite.Simple.ToRow (ToRow(..))
 
 -- | An SQLite prepared statement.
-newtype Statement = Statement Base.Statement
+newtype Statement = Statement { unStatement :: Base.Statement }
 
 -- | Index of a column in a result set. Column indices start from 0.
 newtype ColumnIndex = ColumnIndex BaseD.ColumnIndex

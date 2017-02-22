@@ -4,10 +4,13 @@ module Statement (
     testBind
   , testDoubleBind
   , testPreparedStatements
+  , testPreparedStatementsColumnCount
   ) where
 
 import Common
 import Data.Maybe(fromJust)
+
+import qualified Database.SQLite3 as Base
 
 testBind :: TestEnv -> Test
 testBind TestEnv{..} = TestCase $ do
@@ -48,3 +51,16 @@ testPreparedStatements TestEnv{..} = TestCase $ do
           Just (Only r) <- nextRow stmt
           Nothing <- nextRow stmt :: IO (Maybe (Only String))
           return r
+
+testPreparedStatementsColumnCount :: TestEnv -> Test
+testPreparedStatementsColumnCount TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE ps2 (id INTEGER PRIMARY KEY, t TEXT)"
+  execute_ conn "INSERT INTO ps2 VALUES(1, 'first result')"
+  withStatement conn "SELECT t FROM ps2 WHERE id=?" $ \stmt -> do
+    colName <- columnName stmt 0
+    colName @?= "t"
+    ColumnIndex colCount <- columnCount stmt
+    colCount @?= 1
+    let baseStatment = unStatement stmt
+    colCountBase <- Base.columnCount baseStatment
+    colCountBase @?= 1
