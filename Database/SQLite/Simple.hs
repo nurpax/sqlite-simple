@@ -519,8 +519,8 @@ withImmediateTransaction conn action =
   withTransactionPrivate conn action Immediate
 
 -- | Run an IO action inside a SQL transaction started with @BEGIN EXCLUSIVE
--- TRANSACTION@, which immediately blocks all other database connecdtions from
--- writing, and most other connections from reading.  (Only read_uncommitted
+-- TRANSACTION@, which immediately blocks all other database connections from
+-- writing, and other connections from reading (exception: read_uncommitted
 -- connections are allowed to read.) If the action throws any kind of an
 -- exception, the transaction will be rolled back with @ROLLBACK TRANSACTION@.
 -- Otherwise the results are committed with @COMMIT TRANSACTION@.
