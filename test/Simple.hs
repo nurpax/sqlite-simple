@@ -124,7 +124,6 @@ testSimpleTimeFract TestEnv{..} = TestCase $ do
   assertEqual "UTCTime" time t
   rows <- query conn "SELECT * FROM timefract WHERE t = ?" (Only time) :: IO [Only UTCTime]
   assertEqual "should see one row result" 1 (length rows)
-  assertEqual "UTCTime" time t
 
 testSimpleInsertId :: TestEnv -> Test
 testSimpleInsertId TestEnv{..} = TestCase $ do
