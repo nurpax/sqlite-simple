@@ -26,6 +26,7 @@ module Database.SQLite.Simple.Types
 import           Control.Arrow (first)
 import           Data.Monoid (Monoid(..))
 import           Data.String (IsString(..))
+import           Data.Tuple.Only (Only(..))
 import           Data.Typeable (Typeable)
 import qualified Data.Text as T
 
@@ -72,23 +73,6 @@ instance Monoid Query where
     mempty = Query T.empty
     mappend (Query a) (Query b) = Query (T.append a b)
     {-# INLINE mappend #-}
-
--- | A single-value \"collection\".
---
--- This is useful if you need to supply a single parameter to a SQL
--- query, or extract a single column from a SQL result.
---
--- Parameter example:
---
--- @query c \"select x from scores where x > ?\" ('Only' (42::Int))@
---
--- Result example:
---
--- @xs <- query_ c \"select id from users\"
---forM_ xs $ \\('Only' id) -> {- ... -}@
-newtype Only a = Only {
-      fromOnly :: a
-    } deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 -- | A composite type to parse your custom data structures without
 -- having to define dummy newtype wrappers every time.

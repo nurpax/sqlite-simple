@@ -51,7 +51,8 @@ Library
     direct-sqlite >= 2.3.13 && < 2.4,
     text >= 0.11,
     time,
-    transformers
+    transformers,
+    Only >= 0.1 && < 0.1.1
 
   default-extensions:
       DoAndIfThenElse
