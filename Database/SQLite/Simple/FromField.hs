@@ -195,6 +195,9 @@ instance FromField Day where
 
   fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
+instance FromField SQLData where
+  fromField = pure . fieldData
+
 fieldTypename :: Field -> String
 fieldTypename = B.unpack . gettypename . result
 
