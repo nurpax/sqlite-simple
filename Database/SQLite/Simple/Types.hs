@@ -25,6 +25,7 @@ module Database.SQLite.Simple.Types
 
 import           Control.Arrow (first)
 import           Data.Monoid (Monoid(..))
+import           Data.Semigroup (Semigroup(..))
 import           Data.String (IsString(..))
 import           Data.Tuple.Only (Only(..))
 import           Data.Typeable (Typeable)
@@ -69,9 +70,13 @@ instance Read Query where
 instance IsString Query where
     fromString = Query . T.pack
 
+instance Semigroup Query where
+    Query a <> Query b = Query (T.append a b)
+    {-# INLINE (<>) #-}
+
 instance Monoid Query where
     mempty = Query T.empty
-    mappend (Query a) (Query b) = Query (T.append a b)
+    mappend = (<>)
     {-# INLINE mappend #-}
 
 -- | A composite type to parse your custom data structures without
