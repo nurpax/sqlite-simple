@@ -1,3 +1,6 @@
+0.4.15.0
+	* Support GHC 8.4.1 (Add instance Semigroup Query) (thanks @gwils!)
+
 0.4.14.0
 	* Use @hvr's Only package for the Only single element typle type.
 
