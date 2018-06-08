@@ -54,6 +54,7 @@ tests =
     , TestLabel "Utf8"      . testUtf8Simplest
     , TestLabel "Utf8"      . testBlobs
     , TestLabel "Instances" . testUserFromField
+    , TestLabel "Instances" . testSQLDataFromField
     , TestLabel "Fold"      . testFolds
     , TestLabel "Statement" . testBind
     , TestLabel "Statement" . testDoubleBind
