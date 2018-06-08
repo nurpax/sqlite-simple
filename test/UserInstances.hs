@@ -1,8 +1,12 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module UserInstances (testUserFromField) where
+module UserInstances (
+   testUserFromField
+  ,testSQLDataFromField
+  ) where
 
 import           Common
+import           Data.Int (Int64)
 import           Data.Typeable (Typeable)
 import qualified Data.Text as T
 import           Database.SQLite.Simple.FromField
@@ -31,3 +35,24 @@ testUserFromField TestEnv{..} = TestCase $ do
   execute conn "INSERT INTO fromfield (t) VALUES (?)" (Only (MyType "test2"))
   [Only r] <- query_ conn "SELECT t FROM fromfield" :: IO [(Only String)]
   "toField test2" @=? r
+
+testSQLDataFromField :: TestEnv -> Test
+testSQLDataFromField TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE sqldatafromfield (t TEXT, i INT, b BOOLEAN, f FLOAT)"
+  execute conn "INSERT INTO sqldatafromfield (t,i,b,f) VALUES (?,?,?,?)" (("test string" :: T.Text,
+                                                                    1 :: Int64,
+                                                                    True :: Bool,
+                                                                    1.11 :: Double))
+  execute conn "INSERT INTO sqldatafromfield (t,i,b) VALUES (?,?,?)" (("test string2" :: T.Text,
+                                                                    2 :: Int64,
+                                                                    False :: Bool))
+  r <- query_ conn "SELECT * FROM sqldatafromfield" :: IO [[SQLData]]
+  let testData = [[SQLText "test string",
+                   SQLInteger 1,
+                   SQLInteger 1,
+                   SQLFloat 1.11],
+                  [SQLText "test string2",
+                   SQLInteger 2,
+                   SQLInteger 0,
+                   SQLNull]]
+  testData @=? r
