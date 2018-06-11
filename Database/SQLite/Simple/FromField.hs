@@ -100,7 +100,7 @@ class FromField a where
 
 instance (FromField a) => FromField (Maybe a) where
     fromField (Field SQLNull _) = pure Nothing
-    fromField f                 = Just <$> fromField f                           
+    fromField f                 = Just <$> fromField f
 
 instance FromField Null where
     fromField (Field SQLNull _) = pure Null
