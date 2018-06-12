@@ -1,4 +1,3 @@
-
 import Common
 import Control.Exception (bracket)
 import Control.Monad     (when)
@@ -10,6 +9,7 @@ import DirectSqlite
 import Errors
 import Fold
 import ParamConv
+import QQ
 import Simple
 import Statement
 import TestImports()
@@ -63,6 +63,8 @@ tests =
     , TestLabel "Debug"     . testDebugTracing
     , TestLabel "Direct"    . testDirectSqlite
     , TestLabel "Imports"   . testImports
+    , TestLabel "QQ"        . testSimpleQQ
+    , TestLabel "QQ"        . testMultiLinedQQ
     ]
 
 -- | Action for connecting to the database that will be used for testing.

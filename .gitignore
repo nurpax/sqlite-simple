@@ -4,3 +4,4 @@ TAGS
 /*.hs.html
 /hpc_*.html
 /test.tix
+.stack-work/
