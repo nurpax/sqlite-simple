@@ -40,9 +40,10 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import           Data.Int (Int8, Int16, Int32, Int64)
-import           Data.Time (UTCTime, Day)
+import           Data.Time (UTCTime, Day, NominalDiffTime)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
+import           Text.Read (readEither)
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word, Word8, Word16, Word32, Word64)
 import           GHC.Float (double2Float)
@@ -186,6 +187,17 @@ instance FromField UTCTime where
 
   fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
+parseNominalDiff :: T.Text -> Either String NominalDiffTime
+parseNominalDiff = fmap fromInteger . readEither . T.unpack
+
+instance FromField NominalDiffTime where
+  fromField fld = case fieldData fld of
+    (SQLText t) -> case parseNominalDiff t of
+      Right tm -> pure tm
+      Left e -> err ("couldn't parse UTCTime field: " ++ e)
+    _ -> err "expecting SQLText column type"
+    where
+    err = returnError ConversionFailed fld
 
 instance FromField Day where
   fromField f@(Field (SQLText t) _) =
