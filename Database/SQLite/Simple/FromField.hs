@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {-# LANGUAGE ScopedTypeVariables      #-}
+{-# LANGUAGE TypeApplications      #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -187,15 +188,21 @@ instance FromField UTCTime where
 
   fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
-parseNominalDiff :: T.Text -> Either String NominalDiffTime
-parseNominalDiff = fmap fromInteger . readEither . T.unpack
+-- TODO In `time >= 1.9.1` we can do (at least a bit) better because
+-- we can construct 'NominalDiffTime''s using
+-- @secondsToNominalDiffTime@ - this still doesn't take into acount
+-- rounded numbers - but `NominalDiffTime` doesn't seem to allow that.
+floatToTime :: Double -> NominalDiffTime
+floatToTime = fromInteger . round
+
+integerToTime :: Int64 -> NominalDiffTime
+integerToTime = fromInteger @NominalDiffTime . toInteger
 
 instance FromField NominalDiffTime where
   fromField fld = case fieldData fld of
-    (SQLText t) -> case parseNominalDiff t of
-      Right tm -> pure tm
-      Left e -> err ("couldn't parse UTCTime field: " ++ e)
-    _ -> err "expecting SQLText column type"
+    (SQLFloat   n) -> pure $ floatToTime n
+    (SQLInteger n) -> pure $ integerToTime n
+    _ -> err "expecting SQLFloat column type"
     where
     err = returnError ConversionFailed fld
 
