@@ -322,7 +322,7 @@ execute conn template qs =
 -- expected to return results.
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
-executeMany :: ToRow q => Connection -> Query -> [q] -> IO ()
+executeMany :: (Foldable t, ToRow q) => Connection -> Query -> t q -> IO ()
 executeMany conn template paramRows = withStatement conn template $ \stmt -> do
   let Statement stmt' = stmt
   forM_ paramRows $ \params ->
