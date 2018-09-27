@@ -1,4 +1,5 @@
-{-# Language DefaultSignatures, FlexibleContexts #-}
+{-# Language DefaultSignatures, FlexibleContexts, DerivingStrategies,
+  DeriveAnyClass #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.SQLite.Simple.ToRow
@@ -59,37 +60,14 @@ class ToRow a where
     default toRow :: Generic a => GToRow (Rep a) => a -> [SQLData]
     toRow a = gtoRow $ from a
 
-instance ToRow () where
-    toRow _ = []
-
-instance (ToField a) => ToRow (Only a) where
-    toRow (Only v) = [toField v]
-
-instance (ToField a, ToField b) => ToRow (a,b) where
-    toRow (a,b) = [toField a, toField b]
-
-instance (ToField a, ToField b, ToField c) => ToRow (a,b,c) where
-    toRow (a,b,c) = [toField a, toField b, toField c]
-
-instance (ToField a, ToField b, ToField c, ToField d) => ToRow (a,b,c,d) where
-    toRow (a,b,c,d) = [toField a, toField b, toField c, toField d]
-
-instance (ToField a, ToField b, ToField c, ToField d, ToField e)
-    => ToRow (a,b,c,d,e) where
-    toRow (a,b,c,d,e) =
-        [toField a, toField b, toField c, toField d, toField e]
-
-instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f)
-    => ToRow (a,b,c,d,e,f) where
-    toRow (a,b,c,d,e,f) =
-        [toField a, toField b, toField c, toField d, toField e, toField f]
-
-instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
-          ToField g)
-    => ToRow (a,b,c,d,e,f,g) where
-    toRow (a,b,c,d,e,f,g) =
-        [toField a, toField b, toField c, toField d, toField e, toField f,
-         toField g]
+deriving anyclass instance ToRow ()
+deriving anyclass instance (ToField a) => ToRow (Only a)
+deriving anyclass instance (ToField a, ToField b) => ToRow (a,b)
+deriving anyclass instance (ToField a, ToField b, ToField c) => ToRow (a,b,c)
+deriving anyclass instance (ToField a, ToField b, ToField c, ToField d) => ToRow (a,b,c,d)
+deriving anyclass instance (ToField a, ToField b, ToField c, ToField d, ToField e) => ToRow (a,b,c,d,e)
+deriving anyclass instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f) => ToRow (a,b,c,d,e,f)
+deriving anyclass instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f, ToField g) => ToRow (a,b,c,d,e,f,g)
 
 instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
           ToField g, ToField h)
