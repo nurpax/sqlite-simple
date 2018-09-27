@@ -1,3 +1,4 @@
+{-# Language DefaultSignatures, FlexibleContexts #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.SQLite.Simple.ToRow
@@ -17,20 +18,46 @@
 ------------------------------------------------------------------------------
 
 module Database.SQLite.Simple.ToRow
-    (
-      ToRow(..)
+    ( GToRow(..)
+    , ToRow(..)
     ) where
+
+import GHC.Generics
 
 import Database.SQLite.Simple.ToField (ToField(..))
 import Database.SQLite.Simple.Types (Only(..), (:.)(..))
 
 import Database.SQLite3 (SQLData(..))
 
+-- | Generic implementation of 'ToRow'.
+--
+-- @since 0.4.16.1
+class GToRow f where
+  gtoRow :: (f a) -> [SQLData]
+
+instance GToRow U1 where
+  gtoRow U1 = toRow ()
+
+instance ToField a => GToRow (K1 i a) where
+  gtoRow (K1 a) = pure $ toField a
+
+instance (GToRow a, GToRow b) => GToRow (a :*: b) where
+  gtoRow (a :*: b) = gtoRow a <> gtoRow b
+
+instance GToRow a => GToRow (M1 i c a) where
+  gtoRow (M1 a) = gtoRow a
+
 -- | A collection type that can be turned into a list of 'SQLData'
 -- elements.
 class ToRow a where
     toRow :: a -> [SQLData]
     -- ^ 'ToField' a collection of values.
+
+    -- | Generic implementation of 'ToRow'.
+    --
+    -- @since 0.4.16.1@
+    default toRow :: Generic a => GToRow (Rep a) => a -> [SQLData]
+    toRow a = gtoRow $ from a
 
 instance ToRow () where
     toRow _ = []
