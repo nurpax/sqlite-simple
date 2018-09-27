@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards, DefaultSignatures, FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards, DefaultSignatures, FlexibleContexts,
+  StandaloneDeriving #-}
 
 ------------------------------------------------------------------------------
 -- |

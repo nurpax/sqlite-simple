@@ -1,5 +1,5 @@
 {-# Language DefaultSignatures, FlexibleContexts, DerivingStrategies,
-  DeriveAnyClass #-}
+  DeriveAnyClass, StandaloneDeriving #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.SQLite.Simple.ToRow
