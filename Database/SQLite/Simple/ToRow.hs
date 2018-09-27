@@ -56,7 +56,7 @@ class ToRow a where
 
     -- | Generic implementation of 'ToRow'.
     --
-    -- @since 0.4.16.1@
+    -- @since 0.4.16.1
     default toRow :: Generic a => GToRow (Rep a) => a -> [SQLData]
     toRow a = gtoRow $ from a
 

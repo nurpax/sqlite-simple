@@ -81,7 +81,7 @@ class FromRow a where
 
     -- | Generic implementation of 'FromRow'.
     --
-    -- @since 0.4.16.1@
+    -- @since 0.4.16.1
     default fromRow :: Generic a => GFromRow (Rep a) => RowParser a
     fromRow = to <$> gfromRow
 
