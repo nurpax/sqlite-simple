@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, DefaultSignatures, FlexibleContexts,
+  StandaloneDeriving #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -17,7 +18,8 @@
 ------------------------------------------------------------------------------
 
 module Database.SQLite.Simple.FromRow
-     ( FromRow(..)
+     ( GFromRow(..)
+     , FromRow(..)
      , RowParser
      , field
      , fieldWith
@@ -30,11 +32,31 @@ import           Control.Monad (replicateM)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
+import           GHC.Generics
 
 import           Database.SQLite.Simple.FromField
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
 import           Database.SQLite.Simple.Types
+
+
+-- | Generic implementation of 'FromRow'.
+--
+-- @since 0.4.16.1
+class GFromRow f where
+  gfromRow :: RowParser (f a)
+
+instance GFromRow U1 where
+  gfromRow = pure U1
+
+instance FromField a => GFromRow (K1 i a) where
+  gfromRow = K1 <$> field
+
+instance GFromRow a => GFromRow (M1 i c a) where
+  gfromRow = M1 <$> gfromRow
+
+instance (GFromRow a, GFromRow b) => GFromRow (a :*: b) where
+  gfromRow = (:*:) <$> gfromRow <*> gfromRow
 
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.
@@ -57,6 +79,12 @@ import           Database.SQLite.Simple.Types
 
 class FromRow a where
     fromRow :: RowParser a
+
+    -- | Generic implementation of 'FromRow'.
+    --
+    -- @since 0.4.16.1
+    default fromRow :: Generic a => GFromRow (Rep a) => RowParser a
+    fromRow = to <$> gfromRow
 
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
