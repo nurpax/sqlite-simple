@@ -35,7 +35,6 @@ module Database.SQLite.Simple.FromField
     , returnError
     ) where
 
-import           Control.Applicative (Applicative, (<$>), pure)
 import           Control.Exception (SomeException(..), Exception)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -44,7 +43,6 @@ import           Data.Int (Int8, Int16, Int32, Int64)
 import           Data.Time (UTCTime, Day, NominalDiffTime)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
-import           Text.Read (readEither)
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word, Word8, Word16, Word32, Word64)
 import           GHC.Float (double2Float)
@@ -188,21 +186,10 @@ instance FromField UTCTime where
 
   fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
--- TODO In `time >= 1.9.1` we can do (at least a bit) better because
--- we can construct 'NominalDiffTime''s using
--- @secondsToNominalDiffTime@ - this still doesn't take into acount
--- rounded numbers - but `NominalDiffTime` doesn't seem to allow that.
-floatToTime :: Double -> NominalDiffTime
-floatToTime = fromInteger . round
-
-integerToTime :: Int64 -> NominalDiffTime
-integerToTime = fromInteger @NominalDiffTime . toInteger
-
 instance FromField NominalDiffTime where
   fromField fld = case fieldData fld of
-    (SQLFloat   n) -> pure $ floatToTime n
-    (SQLInteger n) -> pure $ integerToTime n
-    _ -> err "expecting SQLFloat column type"
+    (SQLInteger n) -> pure $ toEnum $ fromEnum n
+    _ -> err "expecting SQLInteger column type"
     where
     err = returnError ConversionFailed fld
 
