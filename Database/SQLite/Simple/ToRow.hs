@@ -30,7 +30,8 @@ import Database.SQLite.Simple.Types (Only(..), (:.)(..))
 
 import Database.SQLite3 (SQLData(..))
 
--- | Generic implementation of 'ToRow'.
+-- | Generic derivation of 'ToRow'.  For details about what can be
+-- derived refer to 'Database.Sqlite.Simple.FromRow.GFromRow'.
 --
 -- @since 0.4.16.1
 class GToRow f where
@@ -50,13 +51,15 @@ instance GToRow a => GToRow (M1 i c a) where
 
 -- | A collection type that can be turned into a list of 'SQLData'
 -- elements.
+--
+-- Since version 0.4.16.1 it is possible in some cases to derive a
+-- generic implementation for 'ToRow'.  Refer to the documentation for
+-- 'Database.Sqlite.Simple.FromRow.FromRow' to see how this can be
+-- done.
 class ToRow a where
     toRow :: a -> [SQLData]
     -- ^ 'ToField' a collection of values.
 
-    -- | Generic implementation of 'ToRow'.
-    --
-    -- @since 0.4.16.1
     default toRow :: Generic a => GToRow (Rep a) => a -> [SQLData]
     toRow a = gtoRow $ from a
 
