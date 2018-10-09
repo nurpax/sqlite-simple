@@ -132,7 +132,7 @@ instance ToField UTCTime where
     toField = SQLText . T.decodeUtf8 . toByteString . utcTimeToBuilder
 
 instance ToField NominalDiffTime where
-    toField = SQLInteger . toEnum . fromEnum
+    toField = SQLFloat . realToFrac
     {-# INLINE toField #-}
 
 instance ToField Day where

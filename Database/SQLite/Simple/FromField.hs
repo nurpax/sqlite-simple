@@ -188,7 +188,7 @@ instance FromField UTCTime where
 
 instance FromField NominalDiffTime where
   fromField fld = case fieldData fld of
-    (SQLInteger n) -> pure $ toEnum $ fromEnum n
+    (SQLFloat n) -> pure $ realToFrac n
     _ -> err "expecting SQLInteger column type"
     where
     err = returnError ConversionFailed fld
