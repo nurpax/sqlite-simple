@@ -1,5 +1,5 @@
-{-# Language DefaultSignatures, FlexibleContexts, DerivingStrategies,
-  DeriveAnyClass, StandaloneDeriving #-}
+{-# Language DefaultSignatures, FlexibleContexts, DeriveAnyClass,
+  StandaloneDeriving #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.SQLite.Simple.ToRow
@@ -63,14 +63,14 @@ class ToRow a where
     default toRow :: Generic a => GToRow (Rep a) => a -> [SQLData]
     toRow a = gtoRow $ from a
 
-deriving anyclass instance ToRow ()
-deriving anyclass instance (ToField a) => ToRow (Only a)
-deriving anyclass instance (ToField a, ToField b) => ToRow (a,b)
-deriving anyclass instance (ToField a, ToField b, ToField c) => ToRow (a,b,c)
-deriving anyclass instance (ToField a, ToField b, ToField c, ToField d) => ToRow (a,b,c,d)
-deriving anyclass instance (ToField a, ToField b, ToField c, ToField d, ToField e) => ToRow (a,b,c,d,e)
-deriving anyclass instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f) => ToRow (a,b,c,d,e,f)
-deriving anyclass instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f, ToField g) => ToRow (a,b,c,d,e,f,g)
+deriving instance ToRow ()
+deriving instance (ToField a) => ToRow (Only a)
+deriving instance (ToField a, ToField b) => ToRow (a,b)
+deriving instance (ToField a, ToField b, ToField c) => ToRow (a,b,c)
+deriving instance (ToField a, ToField b, ToField c, ToField d) => ToRow (a,b,c,d)
+deriving instance (ToField a, ToField b, ToField c, ToField d, ToField e) => ToRow (a,b,c,d,e)
+deriving instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f) => ToRow (a,b,c,d,e,f)
+deriving instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f, ToField g) => ToRow (a,b,c,d,e,f,g)
 
 instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
           ToField g, ToField h)
