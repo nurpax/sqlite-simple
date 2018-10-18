@@ -44,7 +44,7 @@ instance ToField a => GToRow (K1 i a) where
   gtoRow (K1 a) = pure $ toField a
 
 instance (GToRow a, GToRow b) => GToRow (a :*: b) where
-  gtoRow (a :*: b) = gtoRow a <> gtoRow b
+  gtoRow (a :*: b) = gtoRow a `mappend` gtoRow b
 
 instance GToRow a => GToRow (M1 i c a) where
   gtoRow (M1 a) = gtoRow a
