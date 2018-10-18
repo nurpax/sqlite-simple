@@ -25,7 +25,7 @@ import           Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Encoding as T
-import           Data.Time (Day, UTCTime)
+import           Data.Time (Day, UTCTime, NominalDiffTime)
 import           Data.Word (Word, Word8, Word16, Word32, Word64)
 import           GHC.Float
 
@@ -130,6 +130,9 @@ instance ToField LT.Text where
 
 instance ToField UTCTime where
     toField = SQLText . T.decodeUtf8 . toByteString . utcTimeToBuilder
+
+instance ToField NominalDiffTime where
+    toField = SQLFloat . realToFrac
     {-# INLINE toField #-}
 
 instance ToField Day where

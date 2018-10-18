@@ -1,7 +1,13 @@
+0.4.16.2
+	* Add instance for {From,To}Field for NominalDiffTime
+
+0.4.16.1
+	* Add generic implementation of 'FromRow' and 'ToRow'.
+
 0.4.16.0
 	* Add FromField instance for SQLData (thanks @LindaOrtega, @Shimuuar)
 	* Add QuasiQuoter sql (thanks @vrom911)
-	
+
 0.4.15.0
 	* Support GHC 8.4.1 (Add instance Semigroup Query) (thanks @gwils!)
 
