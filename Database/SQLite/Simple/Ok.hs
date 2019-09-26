@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor      #-}
 
@@ -32,6 +33,7 @@ module Database.SQLite.Simple.Ok where
 import Control.Applicative
 import Control.Exception
 import Control.Monad(MonadPlus(..))
+import qualified Control.Monad.Fail as Fail
 import Data.Typeable
 
 -- FIXME:   [SomeException] should probably be something else,  maybe
@@ -72,7 +74,12 @@ instance Monad Ok where
     Errors es >>= _ = Errors es
     Ok a      >>= f = f a
 
-    fail str = Errors [SomeException (ErrorCall str)]
+#if !(MIN_VERSION_base(4,13,0))
+    fail = Fail.fail
+#endif
+
+instance Fail.MonadFail Ok where
+  fail str = Errors [SomeException (ErrorCall str)]
 
 -- | a way to reify a list of exceptions into a single exception
 
