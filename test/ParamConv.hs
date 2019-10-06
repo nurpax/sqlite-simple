@@ -133,10 +133,10 @@ testParamConvDateTime TestEnv{..} = TestCase $ do
   -- TODO should _rows be forced to make sure parsers kick on the
   -- returned data?
   execute conn "INSERT INTO dt (t1,t2) VALUES (?,?)"
-    (read "2012-08-12" :: Day, read "2012-08-12 01:01:01" :: UTCTime)
+    (read "2012-08-12" :: Day, read "2012-08-12 01:01:01 UTC" :: UTCTime)
   [_,(t1,t2)] <- query_ conn "SELECT t1,t2 from dt" :: IO [(Day, UTCTime)]
   assertEqual "day" (read "2012-08-12" :: Day) t1
-  assertEqual "day" (read "2012-08-12 01:01:01" :: UTCTime) t2
+  assertEqual "day" (read "2012-08-12 01:01:01 UTC" :: UTCTime) t2
 
 
 testParamConvBools :: TestEnv -> Test

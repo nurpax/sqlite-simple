@@ -21,11 +21,18 @@ import qualified Data.ByteString.Lazy as LBS
 -- orphan IsString instance in older byteString
 import           Data.ByteString.Lazy.Char8 ()
 import           Data.Monoid ((<>), mappend, mempty)
+import           Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Time (UTCTime, Day)
+import           Text.Read (readMaybe)
 
 import           Common
+
+-- Used to parse strings with no tz; in this case adds " UTC", which
+-- can be parsed in old and new time library
+readUTC :: String -> UTCTime
+readUTC s = fromMaybe (error $ "can't parse UTC time: " ++ s) . readMaybe $ s ++ " UTC"
 
 -- Simplest SELECT
 testSimpleOnePlusOne :: TestEnv -> Test
@@ -86,7 +93,7 @@ testSimpleParams TestEnv{..} = TestCase $ do
 testSimpleTime :: TestEnv -> Test
 testSimpleTime TestEnv{..} = TestCase $ do
   let timestr = "2012-08-20 20:19:58"
-      time    = read timestr :: UTCTime
+      time    = readUTC timestr
   execute_ conn "CREATE TABLE time (t TIMESTAMP)"
   execute conn "INSERT INTO time (t) VALUES (?)" (Only time)
   [Only t] <- query_ conn "SELECT * FROM time" :: IO [Only UTCTime]
@@ -116,7 +123,7 @@ testSimpleTime TestEnv{..} = TestCase $ do
 testSimpleTimeFract :: TestEnv -> Test
 testSimpleTimeFract TestEnv{..} = TestCase $ do
   let timestr = "2012-08-17 08:00:03.256887"
-      time    = read timestr :: UTCTime
+      time    = readUTC timestr
   -- Try inserting timestamp directly as a string
   execute_ conn "CREATE TABLE timefract (t TIMESTAMP)"
   execute_ conn (Query (T.concat ["INSERT INTO timefract (t) VALUES ('", T.pack timestr, "')"]))
@@ -172,7 +179,7 @@ testSimpleUTCTime TestEnv{..} = TestCase $ do
   where
     matchDates (str,(Only date)) = do
       -- Remove 'T' when reading in to Haskell
-      let t = read (makeReadable str) :: UTCTime
+      let t = readUTC (makeReadable str)
       t @=? date
 
     makeReadable s =
@@ -212,7 +219,7 @@ testSimpleUTCTimeParams TestEnv{..} = TestCase $ do
   mapM_ assertResult times
   where
     assertResult tstr = do
-      let utct = read . T.unpack $ tstr :: UTCTime
+      let utct = readUTC . T.unpack $ tstr
       [Only t] <- query conn "SELECT ?" (Only utct) :: IO [Only T.Text]
       assertEqual "UTCTime" tstr t
 

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor      #-}
+{-# LANGUAGE CPP #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -72,6 +73,9 @@ instance Monad Ok where
     Errors es >>= _ = Errors es
     Ok a      >>= f = f a
 
+#if __GLASGOW_HASKELL__ >= 808
+instance MonadFail Ok where
+#endif
     fail str = Errors [SomeException (ErrorCall str)]
 
 -- | a way to reify a list of exceptions into a single exception
