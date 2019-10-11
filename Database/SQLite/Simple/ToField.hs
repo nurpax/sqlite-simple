@@ -47,6 +47,11 @@ instance (ToField a) => ToField (Maybe a) where
     toField (Just a) = toField a
     {-# INLINE toField #-}
 
+instance (ToField a, ToField b) => ToField (Either a b) where
+    toField (Left a) = toField a
+    toField (Right b) = toField b
+    {-# INLINE toField #-}
+
 instance ToField Null where
     toField _ = Base.SQLNull
     {-# INLINE toField #-}
