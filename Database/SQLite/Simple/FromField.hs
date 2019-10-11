@@ -34,7 +34,7 @@ module Database.SQLite.Simple.FromField
     , returnError
     ) where
 
-import           Control.Applicative (Applicative, (<$>), pure)
+import           Control.Applicative (Applicative, (<$>), (<|>), pure)
 import           Control.Exception (SomeException(..), Exception)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -101,6 +101,9 @@ class FromField a where
 instance (FromField a) => FromField (Maybe a) where
     fromField (Field SQLNull _) = pure Nothing
     fromField f                 = Just <$> fromField f
+
+instance (FromField a, FromField b) => FromField (Either a b) where
+  fromField f = (Left <$> fromField f) <|> (Right <$> fromField f)
 
 instance FromField Null where
     fromField (Field SQLNull _) = pure Null
