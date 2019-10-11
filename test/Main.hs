@@ -11,6 +11,7 @@ import Fold
 import ParamConv
 import QQ
 import Simple
+import Function
 import Statement
 import TestImports()
 import TestImports
@@ -61,6 +62,7 @@ tests =
     , TestLabel "Statement" . testPreparedStatements
     , TestLabel "Statement" . testPreparedStatementsColumnCount
     , TestLabel "Debug"     . testDebugTracing
+    , TestLabel "Functions" . testExternalAddition
     , TestLabel "Direct"    . testDirectSqlite
     , TestLabel "Imports"   . testImports
     , TestLabel "QQ"        . testSimpleQQ

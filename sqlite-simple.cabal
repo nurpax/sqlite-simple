@@ -83,6 +83,7 @@ test-suite test
                 , DirectSqlite
                 , Errors
                 , Fold
+                , Function
                 , ParamConv
                 , QQ
                 , Simple
