@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, TypeApplications, FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 module Database.SQLite.Simple.Function
     (
@@ -39,8 +39,8 @@ instance {-# Overlapping #-} (Function a) => Function (IO a) where
   evalFunction ctx args ca a = a >>= evalFunction ctx args ca
 
 instance {-# Overlapping #-} forall f r . (Function r, FromField f) => Function (f -> r) where
-  argCount = const $ argCount (Proxy @r) + 1
-  deterministicFn = const $ deterministicFn $ Proxy @r
+  argCount = const $ argCount (Proxy :: Proxy r) + 1
+  deterministicFn = const $ deterministicFn (Proxy :: Proxy r)
   evalFunction ctx args ca fn = let ca' = Base.ArgCount ca in do
     sqlv <- Base.funcArgType args ca' >>= \ct -> case ct of
       Base.IntegerColumn -> SQLInteger <$> Base.funcArgInt64 args ca'
@@ -57,8 +57,8 @@ createFunction :: forall f . Function f => Connection -> T.Text -> f -> IO (Eith
 createFunction (Connection db) fn f = Base.createFunction
   db
   (Base.Utf8 $ TE.encodeUtf8 fn)
-  (Just $ Base.ArgCount $ argCount (Proxy @f))
-  (deterministicFn (Proxy @f))
+  (Just $ Base.ArgCount $ argCount (Proxy :: Proxy f))
+  (deterministicFn (Proxy :: Proxy f))
   (\ctx args -> catch
     (evalFunction ctx args 0 f)
-    (const @_ @SomeException $ Base.funcResultNull ctx))
+    ((const :: IO () -> SomeException -> IO ()) $ Base.funcResultNull ctx))
