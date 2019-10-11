@@ -4,11 +4,12 @@ module Database.SQLite.Simple.Function
     (
       Function
     , createFunction
+    , deleteFunction
     ) where
 
 import Control.Exception
 import Data.Proxy
-import Database.SQLite3 as Base hiding (createFunction,funcArgText,funcResultText)
+import Database.SQLite3 as Base hiding (createFunction,deleteFunction,funcArgText,funcResultText)
 import qualified Database.SQLite3.Direct as Base
 import Database.SQLite.Simple
 import Database.SQLite.Simple.Internal (Field(..))
@@ -62,3 +63,9 @@ createFunction (Connection db) fn f = Base.createFunction
   (\ctx args -> catch
     (evalFunction ctx args 0 f)
     ((const :: IO () -> SomeException -> IO ()) $ Base.funcResultNull ctx))
+
+deleteFunction :: Connection -> T.Text -> IO (Either Base.Error ())
+deleteFunction (Connection db) fn = Base.deleteFunction
+  db
+  (Base.Utf8 $ TE.encodeUtf8 fn)
+  Nothing
