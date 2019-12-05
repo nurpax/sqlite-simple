@@ -19,8 +19,6 @@
 
 module Database.SQLite.Simple.Internal where
 
-import           Prelude hiding (catch)
-
 import           Control.Exception (Exception)
 import           Control.Monad
 import           Control.Applicative

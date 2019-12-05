@@ -72,6 +72,7 @@ instance Monad Ok where
     Errors es >>= _ = Errors es
     Ok a      >>= f = f a
 
+instance MonadFail Ok where
     fail str = Errors [SomeException (ErrorCall str)]
 
 -- | a way to reify a list of exceptions into a single exception

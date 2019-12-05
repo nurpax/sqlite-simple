@@ -24,7 +24,6 @@ module Database.SQLite.Simple.FromRow
      , numFieldsRemaining
      ) where
 
-import           Control.Applicative (Applicative(..), (<$>))
 import           Control.Exception (SomeException(..))
 import           Control.Monad (replicateM)
 import           Control.Monad.Trans.State.Strict

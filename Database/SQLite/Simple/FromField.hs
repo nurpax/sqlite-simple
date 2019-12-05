@@ -34,7 +34,6 @@ module Database.SQLite.Simple.FromField
     , returnError
     ) where
 
-import           Control.Applicative (Applicative, (<$>), pure)
 import           Control.Exception (SomeException(..), Exception)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -44,7 +43,7 @@ import           Data.Time (UTCTime, Day)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Typeable (Typeable, typeOf)
-import           Data.Word (Word, Word8, Word16, Word32, Word64)
+import           Data.Word (Word8, Word16, Word32, Word64)
 import           GHC.Float (double2Float)
 
 import           Database.SQLite3 as Base
