@@ -39,6 +39,7 @@ Library
      Database.SQLite.Simple.ToField
      Database.SQLite.Simple.ToRow
      Database.SQLite.Simple.Types
+     Database.SQLite.Simple.Function
      Database.SQLite.Simple.Time
      Database.SQLite.Simple.Time.Implementation
 
@@ -82,6 +83,7 @@ test-suite test
                 , DirectSqlite
                 , Errors
                 , Fold
+                , Function
                 , ParamConv
                 , QQ
                 , Simple
