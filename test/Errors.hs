@@ -11,7 +11,6 @@ module Errors (
   , testErrorsExclusiveTransaction
   ) where
 
-import           Prelude hiding (catch)
 import           Control.Exception
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
@@ -22,7 +21,6 @@ import           Data.Time (Day, UTCTime)
 
 import           Common
 import           Database.SQLite.Simple.Types (Null)
-import           Database.SQLite3 (SQLError)
 
 -- The "length (show e) `seq` .." trickery below is to force evaluate
 -- the contents of error messages.  Another option would be to log

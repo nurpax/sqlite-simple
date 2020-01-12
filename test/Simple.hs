@@ -20,7 +20,6 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 -- orphan IsString instance in older byteString
 import           Data.ByteString.Lazy.Char8 ()
-import           Data.Monoid ((<>), mappend, mempty)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Time (UTCTime, Day)
@@ -86,7 +85,7 @@ testSimpleParams TestEnv{..} = TestCase $ do
 testSimpleTime :: TestEnv -> Test
 testSimpleTime TestEnv{..} = TestCase $ do
   let timestr = "2012-08-20 20:19:58"
-      time    = read timestr :: UTCTime
+      time    = read (timestr ++ " UTC") :: UTCTime
   execute_ conn "CREATE TABLE time (t TIMESTAMP)"
   execute conn "INSERT INTO time (t) VALUES (?)" (Only time)
   [Only t] <- query_ conn "SELECT * FROM time" :: IO [Only UTCTime]
@@ -116,7 +115,7 @@ testSimpleTime TestEnv{..} = TestCase $ do
 testSimpleTimeFract :: TestEnv -> Test
 testSimpleTimeFract TestEnv{..} = TestCase $ do
   let timestr = "2012-08-17 08:00:03.256887"
-      time    = read timestr :: UTCTime
+      time    = read (timestr ++ " UTC") :: UTCTime
   -- Try inserting timestamp directly as a string
   execute_ conn "CREATE TABLE timefract (t TIMESTAMP)"
   execute_ conn (Query (T.concat ["INSERT INTO timefract (t) VALUES ('", T.pack timestr, "')"]))
@@ -177,7 +176,7 @@ testSimpleUTCTime TestEnv{..} = TestCase $ do
 
     makeReadable s =
       let s' = if T.length s < T.length "YYYY-MM-DD HH:MM:SS" then T.append s ":00" else s
-      in T.unpack . T.replace "T" " " $ s'
+      in (T.unpack . T.replace "T" " " $ s') ++ " UTC"
 
 testSimpleUTCTimeTZ :: TestEnv -> Test
 testSimpleUTCTimeTZ TestEnv{..} = TestCase $ do
@@ -212,7 +211,7 @@ testSimpleUTCTimeParams TestEnv{..} = TestCase $ do
   mapM_ assertResult times
   where
     assertResult tstr = do
-      let utct = read . T.unpack $ tstr :: UTCTime
+      let utct = read . (++ " UTC") . T.unpack $ tstr :: UTCTime
       [Only t] <- query conn "SELECT ?" (Only utct) :: IO [Only T.Text]
       assertEqual "UTCTime" tstr t
 

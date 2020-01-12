@@ -29,7 +29,6 @@ import           Data.Bits ((.&.))
 import           Data.ByteString.Internal (w2c)
 import           Data.Char (isDigit, ord)
 import           Data.Fixed (Pico)
-import           Data.Monoid (Monoid(..))
 import qualified Data.Text as T
 import           Data.Time hiding (getTimeZone, getZonedTime)
 import           Prelude hiding (take, (++))

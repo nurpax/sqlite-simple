@@ -26,7 +26,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Encoding as T
 import           Data.Time (Day, UTCTime)
-import           Data.Word (Word, Word8, Word16, Word32, Word64)
+import           Data.Word (Word8, Word16, Word32, Word64)
 import           GHC.Float
 
 import           Database.SQLite3 as Base

@@ -24,8 +24,6 @@ module Database.SQLite.Simple.Types
     ) where
 
 import           Control.Arrow (first)
-import           Data.Monoid (Monoid(..))
-import           Data.Semigroup (Semigroup(..))
 import           Data.String (IsString(..))
 import           Data.Tuple.Only (Only(..))
 import           Data.Typeable (Typeable)

@@ -4,7 +4,6 @@ module TestImports (
   ) where
 
 -- Test file to test that we can do most things with a single import
-import           Control.Applicative
 import qualified Data.Text as T
 
 import           Common

@@ -102,7 +102,6 @@ module Database.SQLite.Simple (
   , Base.Error(..)
   ) where
 
-import           Control.Applicative
 import           Control.Exception
 import           Control.Monad (void, when, forM_)
 import           Control.Monad.Trans.Reader

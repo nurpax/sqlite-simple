@@ -1,0 +1,13 @@
+:set -XNamedFieldPuns
+:set -XOverloadedStrings
+:set -XRank2Types
+:set -XRecordWildCards
+:set -XDoAndIfThenElse
+:set -XOverloadedStrings
+:set -XBangPatterns
+:set -XViewPatterns
+:set -XTypeOperators
+:set -Wall
+:set -fno-warn-name-shadowing
+:set -i.
+:set -itest
