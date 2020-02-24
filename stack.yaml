@@ -1,1 +1,4 @@
-resolver: lts-11.9
+resolver: lts-15.1
+
+extra-deps:
+  - direct-sqlite-2.3.26
