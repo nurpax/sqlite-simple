@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simple (
@@ -25,6 +26,10 @@ import qualified Data.Text.Lazy as LT
 import           Data.Time (UTCTime, Day)
 
 import           Common
+
+#if !MIN_VERSION_base(4,11,0)
+import Data.Monoid ((<>))
+#endif
 
 -- Simplest SELECT
 testSimpleOnePlusOne :: TestEnv -> Test

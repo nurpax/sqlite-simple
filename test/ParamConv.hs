@@ -1,5 +1,8 @@
+{-# LANGUAGE ScopedTypeVariables, OverloadedStrings, CPP #-}
+
+#if MIN_VERSION_base(4,9,0)
 {-# OPTIONS_GHC -Wno-overflowed-literals #-}
-{-# LANGUAGE ScopedTypeVariables, OverloadedStrings #-}
+#endif
 
 module ParamConv (
     testParamConvNull
@@ -240,5 +243,3 @@ testParamNamed TestEnv{..} = TestCase $ do
   executeNamed conn "INSERT INTO np (b) VALUES (:b)" [":b" := True]
   [Only t1] <- query_ conn "SELECT b FROM np"
   True @=? t1
-
-
