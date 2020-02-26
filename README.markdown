@@ -87,12 +87,12 @@ For general database issues with a Haskell focus, I recommend sending
 e-mail to the [database-devel mailing
 list](http://www.haskell.org/mailman/listinfo/database-devel).
 
-### Contributing
+## Contributing
 
 If you send pull requests for new features, it'd be great if you could also develop unit
 tests for any such features.
 
-### Credits
+## Credits
 
 - [Janne Hellsten](https://github.com/nurpax) author, long-term maintainer
 - [Sergey Bushnyak](https://github.com/sigrlami) current maintainer
