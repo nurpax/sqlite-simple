@@ -1,6 +1,8 @@
 sqlite-simple: mid-level bindings to the sqlite database
 ========================================================
 
+[![Build Status](https://secure.travis-ci.org/nurpax/sqlite-simple.png)](http://travis-ci.org/nurpax/sqlite-simple)
+
 This library is a mid-level Haskell binding to the SQLite database.
 
 Sqlite-simple provides a convenient API to sqlite that does some level
@@ -21,10 +23,8 @@ about sqlite-simple's expected performance in [my blog about
 sqlite-simple performance against direct-sqlite, Python and
 C](http://nurpax.github.io/posts/2013-08-17-sqlite-simple-benchmarking.html).
 
-[![Build Status](https://secure.travis-ci.org/nurpax/sqlite-simple.png)](http://travis-ci.org/nurpax/sqlite-simple)
 
-Installation
-------------
+## Installation
 
 You can install [sqlite-simple from Hackage](http://hackage.haskell.org/package/sqlite-simple)
 with:
@@ -35,8 +35,7 @@ cabal install sqlite-simple
 
 A Windows user?  It works but please see [this note](https://gist.github.com/3907344) on direct-sqlite Windows installation.
 
-Examples of use
----------------
+## Examples of use
 
 Create a test database by copy&pasting the below snippet to your
 shell:
@@ -73,8 +72,7 @@ More simple usage examples can be found from [sqlite-simple unit
 tests](https://github.com/nurpax/sqlite-simple/blob/master/test/Simple.hs).
 
 
-Development
------------
+## Development
 
 The development roadmap for sqlite-simple is mostly captured in the
 github issue database.
@@ -94,9 +92,10 @@ list](http://www.haskell.org/mailman/listinfo/database-devel).
 If you send pull requests for new features, it'd be great if you could also develop unit
 tests for any such features.
 
+### Credits
 
-Credits
--------
+- [Janne Hellsten](https://github.com/nurpax) author, long-term maintainer
+- [Sergey Bushnyak](https://github.com/sigrlami) current maintainer
 
 A lot of the code is directly borrowed from
 [mysql-simple](http://github.com/bos/mysql-simple) by Bryan O'Sullivan
