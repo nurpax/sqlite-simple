@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, GeneralizedNewtypeDeriving, CPP #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -28,6 +28,10 @@ import           Data.String (IsString(..))
 import           Data.Tuple.Only (Only(..))
 import           Data.Typeable (Typeable)
 import qualified Data.Text as T
+
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup
+#endif
 
 -- | A placeholder for the SQL @NULL@ value.
 data Null = Null

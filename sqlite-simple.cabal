@@ -51,7 +51,7 @@ Library
     bytestring >= 0.9,
     containers,
     direct-sqlite >= 2.3.13 && < 2.4,
-    semigroups == 0.18.*,
+    semigroups >= 0.18 && < 0.20,
     template-haskell,
     text >= 0.11,
     time,
