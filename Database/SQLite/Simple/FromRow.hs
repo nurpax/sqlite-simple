@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, DefaultSignatures, FlexibleContexts,
+  StandaloneDeriving #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -17,7 +18,8 @@
 ------------------------------------------------------------------------------
 
 module Database.SQLite.Simple.FromRow
-     ( FromRow(..)
+     ( GFromRow(..)
+     , FromRow(..)
      , RowParser
      , field
      , fieldWith
@@ -29,11 +31,44 @@ import           Control.Monad (replicateM)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
+import           GHC.Generics
 
 import           Database.SQLite.Simple.FromField
 import           Database.SQLite.Simple.Internal
 import           Database.SQLite.Simple.Ok
 import           Database.SQLite.Simple.Types
+
+
+-- | Generic derivation of 'FromRow'.
+--
+-- Instantiating 'FromRow' can in some cases be quite tedious. Luckily
+-- we can derive it generically in some cases where the type at hand
+-- has a 'Generic' instance.  The current implementation only works
+-- for a (n-ary) product types.  So we would not be able to
+-- e.g. derive a 'FromRow' instance for
+--
+-- @
+-- data Bool = True | False
+-- @
+--
+-- We /can/, however, derive a generic instance for the @User@ type
+-- (see the example in 'FromRow').
+--
+-- @since 0.4.18.1
+class GFromRow f where
+  gfromRow :: RowParser (f a)
+
+instance GFromRow U1 where
+  gfromRow = pure U1
+
+instance FromField a => GFromRow (K1 i a) where
+  gfromRow = K1 <$> field
+
+instance GFromRow a => GFromRow (M1 i c a) where
+  gfromRow = M1 <$> gfromRow
+
+instance (GFromRow a, GFromRow b) => GFromRow (a :*: b) where
+  gfromRow = (:*:) <$> gfromRow <*> gfromRow
 
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.
@@ -41,7 +76,8 @@ import           Database.SQLite.Simple.Types
 -- Note that instances can defined outside of sqlite-simple,  which is
 -- often useful.   For example, here's an instance for a user-defined pair:
 --
--- @data User = User { name :: String, fileQuota :: Int }
+-- @
+-- data User = User { name :: String, fileQuota :: Int }
 --
 -- instance 'FromRow' User where
 --     fromRow = User \<$\> 'field' \<*\> 'field'
@@ -53,9 +89,29 @@ import           Database.SQLite.Simple.Types
 --
 -- Note the caveats associated with user-defined implementations of
 -- 'fromRow'.
-
+--
+-- === Generic implementation
+--
+-- Since version 0.4.18.1 it is possible in some cases to derive a
+-- generic implementation for 'FromRow'.  With a 'Generic' instance
+-- for @User@, the example above could be written:
+--
+-- @
+-- instance 'FromRow' User where
+-- @
+--
+-- With @-XDeriveAnyClass -XDerivingStrategies@ the same can be written:
+--
+-- @
+-- deriving anyclass instance 'FromRow' User
+-- @
+--
+-- For more details refer to 'GFromRow'.
 class FromRow a where
     fromRow :: RowParser a
+
+    default fromRow :: Generic a => GFromRow (Rep a) => RowParser a
+    fromRow = to <$> gfromRow
 
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
