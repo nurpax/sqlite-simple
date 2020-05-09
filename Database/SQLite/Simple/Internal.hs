@@ -24,7 +24,9 @@ import           Control.Monad
 import           Control.Applicative
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Char8()
+import           Data.IORef
 import           Data.Typeable (Typeable)
+import           Data.Word
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 
@@ -39,7 +41,10 @@ import qualified Database.SQLite3 as Base
 -- functionality that's not exposed in the sqlite-simple API.  This
 -- should be a safe thing to do although mixing both APIs is
 -- discouraged.
-newtype Connection = Connection { connectionHandle :: Base.Database }
+data Connection = Connection
+  { connectionHandle :: {-# UNPACK #-} !Base.Database
+  , connectionTempNameCounter :: {-# UNPACK #-} !(IORef Word64)
+  }
 
 data ColumnOutOfBounds = ColumnOutOfBounds { errorColumnIndex :: !Int }
                       deriving (Eq, Show, Typeable)

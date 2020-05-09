@@ -52,6 +52,7 @@ tests =
     , TestLabel "Errors"    . testErrorsTransaction
     , TestLabel "Errors"    . testErrorsImmediateTransaction
     , TestLabel "Errors"    . testErrorsExclusiveTransaction
+    , TestLabel "Errors"    . testErrorsSavepoint
     , TestLabel "Utf8"      . testUtf8Simplest
     , TestLabel "Utf8"      . testBlobs
     , TestLabel "Instances" . testUserFromField

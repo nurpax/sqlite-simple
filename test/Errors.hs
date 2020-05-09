@@ -9,6 +9,7 @@ module Errors (
   , testErrorsTransaction
   , testErrorsImmediateTransaction
   , testErrorsExclusiveTransaction
+  , testErrorsSavepoint
   ) where
 
 import           Control.Exception
@@ -238,6 +239,40 @@ testErrorsExclusiveTransaction TestEnv{..} = TestCase $ do
   where
     rowExists = do
       rows <- query_ conn "SELECT t FROM etrans" :: IO [Only String]
+      case rows of
+        [Only txt] -> do
+          "foo" @=? txt
+          return True
+        [] ->
+          return False
+        _ -> error "should have only one row"
+
+testErrorsSavepoint :: TestEnv -> Test
+testErrorsSavepoint TestEnv{..} = TestCase $ do
+  execute_ conn "CREATE TABLE strans (id INTEGER PRIMARY KEY, t TEXT)"
+  v <- withSavepoint conn $ do
+    executeNamed conn "INSERT INTO strans (t) VALUES (:txt)" [":txt" := ("foo" :: String)]
+    [Only r] <- query_ conn "SELECT t FROM strans" :: IO [Only String]
+    return r
+  v @=? "foo"
+  e <- rowExists
+  True @=? e
+  execute_ conn "DELETE FROM strans"
+  e <- rowExists
+  False @=? e
+  assertFormatErrorCaught
+    (withSavepoint conn $ do
+        -- this execute should be automatically rolled back on error
+        executeNamed conn
+          "INSERT INTO strans (t) VALUES (:txt)" [":txt" := ("foo" :: String)]
+        -- intentional mistake here to hit an error & cause rollback of txn
+        executeNamed conn
+          "INSERT INTO strans (t) VALUES (:txt)" [":missing" := ("foo" :: String)])
+  e <- rowExists
+  False @=? e
+  where
+    rowExists = do
+      rows <- query_ conn "SELECT t FROM strans" :: IO [Only String]
       case rows of
         [Only txt] -> do
           "foo" @=? txt

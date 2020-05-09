@@ -55,8 +55,8 @@ instance {-# Overlapping #-} forall f r . (Function r, FromField f) => Function 
       Errors ex -> throw $ ManyErrors ex
 
 createFunction :: forall f . Function f => Connection -> T.Text -> f -> IO (Either Base.Error ())
-createFunction (Connection db) fn f = Base.createFunction
-  db
+createFunction conn fn f = Base.createFunction
+  (connectionHandle conn)
   (Base.Utf8 $ TE.encodeUtf8 fn)
   (Just $ Base.ArgCount $ argCount (Proxy :: Proxy f))
   (deterministicFn (Proxy :: Proxy f))
@@ -65,7 +65,7 @@ createFunction (Connection db) fn f = Base.createFunction
     ((const :: IO () -> SomeException -> IO ()) $ Base.funcResultNull ctx))
 
 deleteFunction :: Connection -> T.Text -> IO (Either Base.Error ())
-deleteFunction (Connection db) fn = Base.deleteFunction
-  db
+deleteFunction conn fn = Base.deleteFunction
+  (connectionHandle conn)
   (Base.Utf8 $ TE.encodeUtf8 fn)
   Nothing
