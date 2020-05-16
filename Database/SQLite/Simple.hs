@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, GeneralizedNewtypeDeriving, ScopedTypeVariables, GADTs #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, GeneralizedNewtypeDeriving, ScopedTypeVariables, GADTs, DeriveGeneric #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -113,6 +113,7 @@ import           Data.Typeable (Typeable)
 import           Database.SQLite.Simple.Types
 import qualified Database.SQLite3 as Base
 import qualified Database.SQLite3.Direct as BaseD
+import           GHC.Generics
 
 
 import           Database.SQLite.Simple.FromField (ResultError(..))
@@ -146,7 +147,7 @@ data FormatError = FormatError {
       fmtMessage :: String
     , fmtQuery   :: Query
     , fmtParams  :: [String]
-    } deriving (Eq, Show, Typeable)
+    } deriving (Eq, Show, Typeable, Generic)
 
 instance Exception FormatError
 
