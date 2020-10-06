@@ -181,7 +181,7 @@ instance FromField UTCTime where
   fromField f@(Field (SQLText t) _) =
     case parseUTCTime t of
       Right t -> Ok t
-      Left e -> returnError ConversionFailed f ("couldn't parse UTCTime field: " ++ e)
+      Left e -> returnError ConversionFailed f ("couldn't parse UTCTime field: " ++ e ++ ", field contents: " ++ T.unpack t)
 
   fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
@@ -190,7 +190,7 @@ instance FromField Day where
   fromField f@(Field (SQLText t) _) =
     case parseDay t of
       Right t -> Ok t
-      Left e -> returnError ConversionFailed f ("couldn't parse Day field: " ++ e)
+      Left e -> returnError ConversionFailed f ("couldn't parse Day field: " ++ e ++ ", field contents: " ++ T.unpack t)
 
   fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
