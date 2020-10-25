@@ -15,6 +15,7 @@ module Simple (
   , testSimpleQueryCov
   , testSimpleStrings
   , testSimpleChanges
+  , testSimpleUUID
   ) where
 
 import qualified Data.ByteString as BS
@@ -24,6 +25,8 @@ import           Data.ByteString.Lazy.Char8 ()
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Time (UTCTime, Day)
+import           Data.UUID (UUID)
+import qualified Data.UUID.V4 as UUID
 
 import           Common
 
@@ -153,6 +156,18 @@ testSimpleMultiInsert TestEnv{..} = TestCase $ do
 
   rows <- query_ conn "SELECT id,t1,t2 FROM test_multi_insert" :: IO [(Int, String, String)]
   [(1, "foo", "bar"), (2, "baz", "bat")] @=? rows
+
+testSimpleUUID :: TestEnv -> Test
+testSimpleUUID TestEnv{..} = TestCase $ do
+  uuids <- sequenceA $ replicate 5 UUID.nextRandom
+  execute_ conn "CREATE TABLE uuids (id UUID)"
+  mapM_ (execute conn "INSERT INTO uuids (id) VALUES (?)" . Only) uuids
+  ids <- query_ conn "SELECT id from uuids" :: IO [Only UUID]
+  mapM_ matchIds (zip uuids ids)
+  where
+    matchIds (uuid, Only uid) = do
+      uuid @=? uid
+
 
 testSimpleUTCTime :: TestEnv -> Test
 testSimpleUTCTime TestEnv{..} = TestCase $ do

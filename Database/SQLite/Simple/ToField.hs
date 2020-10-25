@@ -26,6 +26,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Encoding as T
 import           Data.Time (Day, UTCTime)
+import           Data.UUID.Types (UUID)
+import qualified Data.UUID.Types as UUID
 import           Data.Word (Word8, Word16, Word32, Word64)
 import           GHC.Float
 
@@ -130,6 +132,10 @@ instance ToField LT.Text where
 
 instance ToField UTCTime where
     toField = SQLText . T.decodeUtf8 . toByteString . utcTimeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField UUID where
+    toField = SQLText . UUID.toText
     {-# INLINE toField #-}
 
 instance ToField Day where
