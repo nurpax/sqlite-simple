@@ -33,6 +33,7 @@ module Database.SQLite.Simple.Ok where
 import Control.Applicative
 import Control.Exception
 import Control.Monad (MonadPlus(..))
+import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Typeable
 
 #if !MIN_VERSION_base(4,13,0) && MIN_VERSION_base(4,9,0)
@@ -80,6 +81,9 @@ instance Monad Ok where
 #if MIN_VERSION_base(4,9,0)
 instance MonadFail Ok where
     fail str = Errors [SomeException (ErrorCall str)]
+
+instance MonadThrow Ok where
+    throwM = fail . show
 #endif
 
 -- | a way to reify a list of exceptions into a single exception
