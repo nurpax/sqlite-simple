@@ -1,3 +1,4 @@
+
 {-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {-# LANGUAGE ScopedTypeVariables      #-}
@@ -158,16 +159,17 @@ instance FromField Bool where
     fromField f = returnError ConversionFailed f "expecting an SQLInteger column type"
 
 instance FromField T.Text where
-    fromField (Field (SQLText txt) _) = Ok txt
-    fromField f                       = returnError ConversionFailed f "need a text"
+  fromField f@(Field sqlData _) = case sqlData of
+    SQLText v -> Ok v
+    SQLInteger v -> Ok $ T.pack $ show v
+    SQLFloat v -> Ok $ T.pack $ show v
+    _ -> returnError ConversionFailed f "need convertible to text"
 
 instance FromField LT.Text where
-    fromField (Field (SQLText txt) _) = Ok . LT.fromStrict $ txt
-    fromField f                       = returnError ConversionFailed f "need a text"
+  fromField f = LT.fromStrict <$> fromField f
 
 instance FromField [Char] where
-  fromField (Field (SQLText t) _) = Ok $ T.unpack t
-  fromField f                     = returnError ConversionFailed f "expecting SQLText column type"
+  fromField f = T.unpack <$> fromField f
 
 instance FromField ByteString where
   fromField (Field (SQLBlob blb) _) = Ok blb
