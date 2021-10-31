@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {-# LANGUAGE ScopedTypeVariables      #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -46,6 +47,7 @@ import qualified Data.Text.Lazy as LT
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word8, Word16, Word32, Word64)
 import           GHC.Float (double2Float)
+import           GHC.Generics
 
 import           Database.SQLite3 as Base
 import           Database.SQLite.Simple.Types
@@ -71,7 +73,7 @@ data ResultError = Incompatible { errSQLType :: String
                  -- be represented as a valid Haskell value, or an
                  -- unexpected low-level error occurred (e.g. mismatch
                  -- between metadata and actual data in a row).
-                   deriving (Eq, Show, Typeable)
+                   deriving (Eq, Show, Typeable, Generic)
 
 instance Exception ResultError
 
