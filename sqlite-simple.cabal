@@ -51,6 +51,7 @@ Library
     bytestring >= 0.9,
     containers,
     direct-sqlite >= 2.3.13 && < 2.4,
+    exceptions >= 0.4,
     template-haskell,
     text >= 0.11,
     time,
