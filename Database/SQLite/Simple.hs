@@ -84,6 +84,7 @@ module Database.SQLite.Simple (
   , withTransaction
   , withImmediateTransaction
   , withExclusiveTransaction
+  , withSavepoint
     -- * Low-level statement API for stream access and prepared statements
   , openStatement
   , closeStatement
@@ -107,6 +108,7 @@ import           Control.Monad (void, when, forM_)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 import           Data.Int (Int64)
+import           Data.IORef
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import           Data.Typeable (Typeable)
@@ -132,7 +134,11 @@ newtype ColumnIndex = ColumnIndex BaseD.ColumnIndex
 data NamedParam where
     (:=) :: (ToField v) => T.Text -> v -> NamedParam
 
-data TransactionType = Deferred | Immediate | Exclusive
+data TransactionType
+  = Deferred
+  | Immediate
+  | Exclusive
+  | Savepoint T.Text
 
 infixr 3 :=
 
@@ -160,11 +166,11 @@ instance Exception FormatError
 -- connection.  This database will vanish when you close the
 -- connection.
 open :: String -> IO Connection
-open fname = Connection <$> Base.open (T.pack fname)
+open fname = Connection <$> Base.open (T.pack fname) <*> newIORef 0
 
 -- | Close a database connection.
 close :: Connection -> IO ()
-close (Connection c) = Base.close c
+close = Base.close . connectionHandle
 
 -- | Opens a database connection, executes an action using this connection, and
 -- closes the connection, even in the presence of exceptions.
@@ -182,8 +188,8 @@ unUtf8 (BaseD.Utf8 bs) = TE.decodeUtf8 bs
 -- Warning: If the logger callback throws an exception, your whole
 -- program may crash.  Enable only for debugging!
 setTrace :: Connection -> Maybe (T.Text -> IO ()) -> IO ()
-setTrace (Connection db) logger =
-  BaseD.setTrace db (fmap (\lf -> lf . unUtf8) logger)
+setTrace conn logger =
+  BaseD.setTrace (connectionHandle conn) (fmap (\lf -> lf . unUtf8) logger)
 
 -- | Binds parameters to a prepared statement. Once 'nextRow' returns 'Nothing',
 -- the statement must be reset with the 'reset' function before it can be
@@ -273,8 +279,8 @@ withBind stmt params io = do
 -- 'Nothing', you need to invoke 'reset' before reexecuting the statement again
 -- with 'nextRow'.
 openStatement :: Connection -> Query -> IO Statement
-openStatement (Connection c) (Query t) = do
-  stmt <- Base.prepare c t
+openStatement conn (Query t) = do
+  stmt <- Base.prepare (connectionHandle conn) t
   return $ Statement stmt
 
 -- | Closes a prepared statement.
@@ -498,12 +504,17 @@ withTransactionPrivate conn action ttype =
     commit
     return r
   where
-    begin    = case ttype of
-                 Deferred  -> execute_ conn "BEGIN TRANSACTION"
-                 Immediate -> execute_ conn "BEGIN IMMEDIATE TRANSACTION"
-                 Exclusive -> execute_ conn "BEGIN EXCLUSIVE TRANSACTION"
-    commit   = execute_ conn "COMMIT TRANSACTION"
-    rollback = execute_ conn "ROLLBACK TRANSACTION"
+    begin    = execute_ conn $ case ttype of
+                 Deferred  -> "BEGIN TRANSACTION"
+                 Immediate -> "BEGIN IMMEDIATE TRANSACTION"
+                 Exclusive -> "BEGIN EXCLUSIVE TRANSACTION"
+                 Savepoint name -> Query $ "SAVEPOINT '" <> name <> "'"
+    commit   = execute_ conn $ case ttype of
+                 Savepoint name -> Query $ "RELEASE '" <> name <> "'"
+                 _ -> "COMMIT TRANSACTION"
+    rollback = execute_ conn $ case ttype of
+                 Savepoint name -> Query $ "ROLLBACK TO '" <> name <> "'"
+                 _ -> "ROLLBACK TRANSACTION"
 
 
 -- | Run an IO action inside a SQL transaction started with @BEGIN IMMEDIATE
@@ -532,21 +543,21 @@ withExclusiveTransaction conn action =
 --
 -- See also <http://www.sqlite.org/c3ref/last_insert_rowid.html>.
 lastInsertRowId :: Connection -> IO Int64
-lastInsertRowId (Connection c) = BaseD.lastInsertRowId c
+lastInsertRowId = BaseD.lastInsertRowId . connectionHandle
 
 -- | <http://www.sqlite.org/c3ref/changes.html>
 --
 -- Return the number of rows that were changed, inserted, or deleted
 -- by the most recent @INSERT@, @DELETE@, or @UPDATE@ statement.
 changes :: Connection -> IO Int
-changes (Connection c) = BaseD.changes c
+changes = BaseD.changes . connectionHandle
 
 -- | <http://www.sqlite.org/c3ref/total_changes.html>
 --
 -- Return the total number of row changes caused by @INSERT@, @DELETE@,
 -- or @UPDATE@ statements since the 'Database' was opened.
 totalChanges :: Connection -> IO Int
-totalChanges (Connection c) = BaseD.totalChanges c
+totalChanges = BaseD.totalChanges . connectionHandle
 
 -- | Run an IO action inside a SQL transaction started with @BEGIN
 -- TRANSACTION@.  If the action throws any kind of an exception, the
@@ -555,6 +566,19 @@ totalChanges (Connection c) = BaseD.totalChanges c
 withTransaction :: Connection -> IO a -> IO a
 withTransaction conn action =
   withTransactionPrivate conn action Deferred
+
+-- | Run an IO action inside an SQLite @SAVEPOINT@. If the action throws any
+-- kind of an exception, the transaction will be rolled back to the savepoint
+-- with @ROLLBACK TO@. Otherwise the results are released to the outer
+-- transaction if any with @RELEASE@.
+--
+-- See <https://sqlite.org/lang_savepoint.html> for a full description of
+-- savepoint semantics.
+withSavepoint :: Connection -> IO a -> IO a
+withSavepoint conn action = do
+  n <- atomicModifyIORef' (connectionTempNameCounter conn) $ \n -> (n + 1, n)
+  withTransactionPrivate conn action $
+    Savepoint $ "sqlite_simple_savepoint_" <> T.pack (show n)
 
 fmtError :: Show v => String -> Query -> [v] -> a
 fmtError msg q xs =
