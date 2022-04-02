@@ -81,10 +81,11 @@ instance Monad Ok where
 #if MIN_VERSION_base(4,9,0)
 instance MonadFail Ok where
     fail str = Errors [SomeException (ErrorCall str)]
+#endif
 
 instance MonadThrow Ok where
-    throwM = fail . show
-#endif
+    throwM = Errors . pure . toException
+
 
 -- | a way to reify a list of exceptions into a single exception
 
