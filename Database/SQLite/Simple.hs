@@ -648,13 +648,13 @@ getQuery stmt =
 -- To most easily construct a query, enable GHC's @OverloadedStrings@
 -- language extension and write your query as a normal literal string.
 --
--- > {-# LANGUAGE OverloadedStrings #-}
+-- > {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 -- >
 -- > import Database.SQLite.Simple
 -- >
 -- > hello = do
 -- >   conn <- open "test.db"
--- >   [[x]] <- query_ conn "select 2 + 2"
+-- >   [[x :: Int]] <- query_ conn "select 2 + 2"
 -- >   print x
 --
 -- A 'Query' value does not represent the actual query that will be
