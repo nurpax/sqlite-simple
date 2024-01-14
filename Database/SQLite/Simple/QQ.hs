@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -27,7 +27,7 @@ import           Language.Haskell.TH.Quote    (QuasiQuoter (..))
 One should consider turning on the @-XQuasiQuotes@ pragma in that module:
 
 @
-{-# LANGUAGE QuasiQuoter #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 myQuery = query conn [sql|
     SELECT

@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, BangPatterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Errors (
     testErrorsColumns
@@ -23,15 +23,11 @@ import           Data.Time (Day, UTCTime)
 import           Common
 import           Database.SQLite.Simple.Types (Null)
 
--- The "length (show e) `seq` .." trickery below is to force evaluate
--- the contents of error messages.  Another option would be to log
--- them (would be useful), but I don't know if HUnit has any logging
--- mechanisms.  Just printing them as is will look like the tests are
--- hitting errors and would be confusing.
-assertResultErrorCaught :: IO a -> Assertion
-assertResultErrorCaught action = do
-  catch (action >> return False) (\(e :: ResultError) -> length (show e) `seq` return True) >>=
-    assertBool "assertResultError exc"
+assertResultErrorThrown :: IO a -> ResultError -> Assertion
+assertResultErrorThrown action expectedError =
+  catch
+    (action >> assertFailure ("Expected error: " ++ show expectedError ++ ", but nothing was thrown"))
+    (\(e :: ResultError) -> assertEqual "assertResultErrorThrown" expectedError e)
 
 assertFormatErrorCaught :: IO a -> Assertion
 assertFormatErrorCaught action = do
@@ -56,54 +52,85 @@ testErrorsColumns TestEnv{..} = TestCase $ do
   assertEqual "row count" 1 (length rows)
   assertEqual "string" (Only "test string") (head rows)
   -- Mismatched number of output columns (selects two, dest type has 1 field)
-  assertResultErrorCaught (query_ conn "SELECT id,t FROM cols" :: IO [Only Int])
+  assertResultErrorThrown (query_ conn "SELECT id,t FROM cols" :: IO [Only Int])
+    ConversionFailed
+      { errSQLType = "2 values: [(\"INTEGER\",\"SQLInteger 1\"),(\"TEXT\",\"SQLText \\\"test s[...]\")]"
+      , errHaskellType = "at least 1 slots in target type"
+      , errMessage = "mismatch between number of columns to convert and number in target type"
+      }
   -- Same as above but the other way round (select 1, dst has two)
-  assertResultErrorCaught (query_ conn "SELECT id FROM cols" :: IO [(Int, String)])
-  -- Mismatching types (source int,text doesn't match dst string,int
-  assertResultErrorCaught (query_ conn "SELECT id, t FROM cols" :: IO [(String, Int)])
-  -- Mismatching types (source string doesn't match dst integer
-  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only Integer])
+  assertResultErrorThrown (query_ conn "SELECT id FROM cols" :: IO [(Int, String)])
+    ConversionFailed
+      { errSQLType = "1 values: [(\"INTEGER\",\"SQLInteger 1\")]"
+      , errHaskellType = "at least 2 slots in target type"
+      , errMessage = "mismatch between number of columns to convert and number in target type"
+      }
+  -- Mismatching types (source int,text doesn't match dst string,int)
+  assertResultErrorThrown (query_ conn "SELECT id, t FROM cols" :: IO [(String, Int)])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "[Char]", errMessage = "expecting SQLText column type"}
+  -- Mismatching types (source string doesn't match dst integer)
+  assertResultErrorThrown (query_ conn "SELECT 'foo'" :: IO [Only Integer])
+    ConversionFailed {errSQLType = "TEXT", errHaskellType = "Integer", errMessage = "need an int"}
   -- Mismatching types (sources don't match destination float/double type)
-  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only Double])
-  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only Double])
-  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only Float])
-  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only Float])
+  assertResultErrorThrown (query_ conn "SELECT 1" :: IO [Only Double])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "Double", errMessage = "expecting an SQLFloat column type"}
+  assertResultErrorThrown (query_ conn "SELECT 'foo'" :: IO [Only Double])
+    ConversionFailed {errSQLType = "TEXT", errHaskellType = "Double", errMessage = "expecting an SQLFloat column type"}
+  assertResultErrorThrown (query_ conn "SELECT 1" :: IO [Only Float])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "Float", errMessage = "expecting an SQLFloat column type"}
+  assertResultErrorThrown (query_ conn "SELECT 'foo'" :: IO [Only Float])
+    ConversionFailed {errSQLType = "TEXT", errHaskellType = "Float", errMessage = "expecting an SQLFloat column type"}
   -- Mismatching types (sources don't match destination bool type, or is out of bounds)
-  assertResultErrorCaught (query_ conn "SELECT 'true'" :: IO [Only Bool])
-  assertResultErrorCaught (query_ conn "SELECT 2" :: IO [Only Bool])
+  assertResultErrorThrown (query_ conn "SELECT 'true'" :: IO [Only Bool])
+    ConversionFailed {errSQLType = "TEXT", errHaskellType = "Bool", errMessage = "expecting an SQLInteger column type"}
+  assertResultErrorThrown (query_ conn "SELECT 2" :: IO [Only Bool])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "Bool", errMessage = "bool must be 0 or 1, got 2"}
   -- Mismatching types (sources don't match destination string types (text, string)
-  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only T.Text])
-  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only LT.Text])
-  assertResultErrorCaught (query_ conn "SELECT 1.0" :: IO [Only T.Text])
-  assertResultErrorCaught (query_ conn "SELECT 1.0" :: IO [Only LT.Text])
+  assertResultErrorThrown (query_ conn "SELECT 1" :: IO [Only T.Text])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "Text", errMessage = "need a text"}
+  assertResultErrorThrown (query_ conn "SELECT 1" :: IO [Only LT.Text])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "Text", errMessage = "need a text"}
+  assertResultErrorThrown (query_ conn "SELECT 1.0" :: IO [Only T.Text])
+    ConversionFailed {errSQLType = "FLOAT", errHaskellType = "Text", errMessage = "need a text"}
+  assertResultErrorThrown (query_ conn "SELECT 1.0" :: IO [Only LT.Text])
+    ConversionFailed {errSQLType = "FLOAT", errHaskellType = "Text", errMessage = "need a text"}
   -- Mismatching types (sources don't match destination string types (time/date)
-  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only UTCTime])
-  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only Day])
+  assertResultErrorThrown (query_ conn "SELECT 1" :: IO [Only UTCTime])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "UTCTime", errMessage = "expecting SQLText column type"}
+  assertResultErrorThrown (query_ conn "SELECT 1" :: IO [Only Day])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "Day", errMessage = "expecting SQLText column type"}
   -- Mismatching types (sources don't match destination bytestring)
   [Only (_ :: B.ByteString)] <-  query_ conn "SELECT X'3177'"
-  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only B.ByteString])
-  assertResultErrorCaught (query_ conn "SELECT 1" :: IO [Only LB.ByteString])
-  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only B.ByteString])
-  assertResultErrorCaught (query_ conn "SELECT 'foo'" :: IO [Only LB.ByteString])
+  assertResultErrorThrown (query_ conn "SELECT 1" :: IO [Only B.ByteString])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "ByteString", errMessage = "expecting SQLBlob column type"}
+  assertResultErrorThrown (query_ conn "SELECT 1" :: IO [Only LB.ByteString])
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "ByteString", errMessage = "expecting SQLBlob column type"}
+  assertResultErrorThrown (query_ conn "SELECT 'foo'" :: IO [Only B.ByteString])
+    ConversionFailed {errSQLType = "TEXT", errHaskellType = "ByteString", errMessage = "expecting SQLBlob column type"}
+  assertResultErrorThrown (query_ conn "SELECT 'foo'" :: IO [Only LB.ByteString])
+    ConversionFailed {errSQLType = "TEXT", errHaskellType = "ByteString", errMessage = "expecting SQLBlob column type"}
   -- Trying to get a blob into a string
   let d = B.pack ([0..127] :: [Word8])
   execute_ conn "CREATE TABLE cols_blobs (id INTEGER, b BLOB)"
   execute conn "INSERT INTO cols_blobs (id, b) VALUES (?,?)" (1 :: Int, d)
-  assertResultErrorCaught
+  assertResultErrorThrown
     (do [Only _t1] <- query conn "SELECT b FROM cols_blobs WHERE id = ?" (Only (1 :: Int)) :: IO [Only String]
         return ())
+    ConversionFailed {errSQLType = "BLOB", errHaskellType = "[Char]", errMessage = "expecting SQLText column type"}
   execute_ conn "CREATE TABLE cols_bools (id INTEGER PRIMARY KEY, b BOOLEAN)"
   -- 3 = invalid value for bool, must be 0 or 1
   execute_ conn "INSERT INTO cols_bools (b) VALUES (3)"
-  assertResultErrorCaught
+  assertResultErrorThrown
     (do [Only _t1] <- query_ conn "SELECT b FROM cols_bools" :: IO [Only Bool]
         return ())
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "Bool", errMessage = "bool must be 0 or 1, got 3"}
   [Only (nullVal :: Null)] <- query_ conn "SELECT NULL"
   False @=? nullVal == nullVal
   False @=? nullVal /= nullVal
-  assertResultErrorCaught
+  assertResultErrorThrown
     (do [Only (_t1 :: Null)] <- query_ conn "SELECT 1" :: IO [Only Null]
         return ())
+    ConversionFailed {errSQLType = "INTEGER", errHaskellType = "Null", errMessage = "data is not null"}
 
 testErrorsInvalidParams :: TestEnv -> Test
 testErrorsInvalidParams TestEnv{..} = TestCase $ do

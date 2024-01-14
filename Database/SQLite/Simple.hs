@@ -244,7 +244,7 @@ bindNamed (Statement stmt) params = do
 reset :: Statement -> IO ()
 reset (Statement stmt) = Base.reset stmt
 
--- | Return the name of a a particular column in the result set of a
+-- | Return the name of a particular column in the result set of a
 -- 'Statement'.  Throws an 'ArrayException' if the colum index is out
 -- of bounds.
 --
@@ -806,7 +806,7 @@ getQuery stmt =
 --
 -- Although SQL can accommodate @NULL@ as a value for any of these
 -- types, Haskell cannot. If your result contains columns that may be
--- @NULL@, be sure that you use 'Maybe' in those positions of of your
+-- @NULL@, be sure that you use 'Maybe' in those positions of your
 -- tuple.
 --
 -- > (Text, Maybe Int, Int)

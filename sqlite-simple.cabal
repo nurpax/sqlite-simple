@@ -23,7 +23,7 @@ Category:            Database
 Build-type:          Simple
 
 Cabal-version:       >= 1.10
-
+tested-with:         GHC == 8.8.4 || == 8.10.7 || == 9.0.2 || == 9.2.8 || == 9.4.8 || == 9.6.3 || == 9.8.1
 extra-source-files:  README.markdown
                      changelog
 
@@ -57,7 +57,7 @@ Library
     time,
     transformers,
     Only >= 0.1 && < 0.1.1
-    
+
   if impl(ghc < 8.0)
     Build-depends: semigroups >= 0.18 && < 0.20
 
