@@ -174,7 +174,7 @@ testSimpleUTCTime TestEnv{..} = TestCase $ do
   [d] <- query conn "SELECT ?" (Only (T.append zulu "Z"))
   matchDates (zulu, d)
   where
-    matchDates (str,(Only date)) = do
+    matchDates (str, Only date) = do
       -- Remove 'T' when reading in to Haskell
       let t = read (makeReadable str) :: UTCTime
       t @=? date
@@ -198,9 +198,9 @@ testSimpleUTCTimeTZ TestEnv{..} = TestCase $ do
   execute_ conn "CREATE TABLE utctimestz (t TIMESTAMP)"
   mapM_ (\t -> execute conn "INSERT INTO utctimestz (t) VALUES (?)" (Only t)) timestrs
   dates <- query_ conn "SELECT t from utctimestz" :: IO [Only UTCTime]
-  mapM_ matchDates (zip (timestrs) dates)
+  mapM_ matchDates (zip timestrs dates)
   where
-    matchDates (str,(Only date)) = do
+    matchDates (str, Only date) = do
       -- Remove 'T' when reading in to Haskell
       let t = read . T.unpack $ str :: UTCTime
       t @=? date
@@ -221,7 +221,7 @@ testSimpleUTCTimeParams TestEnv{..} = TestCase $ do
       assertEqual "UTCTime" tstr t
 
 testSimpleQueryCov :: TestEnv -> Test
-testSimpleQueryCov TestEnv{..} = TestCase $ do
+testSimpleQueryCov _ = TestCase $ do
   let str = "SELECT 1+1" :: T.Text
       q   = "SELECT 1+1" :: Query
   fromQuery q @=? str
