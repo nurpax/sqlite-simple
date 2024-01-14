@@ -1,6 +1,7 @@
-{-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
-{-# LANGUAGE ScopedTypeVariables      #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 ------------------------------------------------------------------------------
 -- |

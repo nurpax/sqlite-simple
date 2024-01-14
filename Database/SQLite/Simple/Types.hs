@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, GeneralizedNewtypeDeriving, CPP #-}
+{-# LANGUAGE DeriveDataTypeable, CPP #-}
 
 ------------------------------------------------------------------------------
 -- |
