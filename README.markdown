@@ -1,7 +1,7 @@
 sqlite-simple: mid-level bindings to the sqlite database
 ========================================================
 
-[![Build Status](https://github.com/nurpax/sqlite-simple/actions/workflows/main.yml/badge.svg)](https://github.com/nurpax/sqlite-simple/actions/workflows/main.yml)
+[![Build Status](https://github.com/nurpax/sqlite-simple/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/nurpax/sqlite-simple/actions/workflows/haskell-ci.yml)
 
 This library is a mid-level Haskell binding to the SQLite database.
 
