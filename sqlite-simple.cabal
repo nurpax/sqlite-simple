@@ -24,7 +24,7 @@ Build-type:          Simple
 
 Cabal-version:       >= 1.10
 tested-with:         GHC == 8.8.4 || == 8.10.7 || == 9.0.2 || == 9.2.8 || == 9.4.8 || == 9.6.3 || == 9.8.1
-extra-source-files:  README.markdown
+extra-source-files:  README.md
                      changelog
 
 Library
