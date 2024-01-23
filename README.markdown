@@ -1,7 +1,7 @@
 sqlite-simple: mid-level bindings to the sqlite database
 ========================================================
 
-[![Build Status](https://github.com/nurpax/sqlite-simple/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/nurpax/sqlite-simple/actions/workflows/haskell-ci.yml)
+[![Build Status](https://github.com/nurpax/sqlite-simple/actions/workflows/haskell-ci.yml/badge.svg)](https://github.com/nurpax/sqlite-simple/actions/workflows/haskell-ci.yml) [![Hackage](https://img.shields.io/hackage/v/sqlite-simple.svg)](https://hackage.haskell.org/package/sqlite-simple)
 
 This library is a mid-level Haskell binding to the SQLite database.
 
@@ -95,7 +95,8 @@ tests for any such features.
 ## Credits
 
 - [Janne Hellsten](https://github.com/nurpax) author, long-term maintainer
-- [Sergey Bushnyak](https://github.com/sigrlami) current maintainer
+- [Sergey Bushnyak](https://github.com/sigrlami) long-term maintainer
+- [Joshua Chia](https://github.com/jchia) current maintainer
 
 A lot of the code is directly borrowed from
 [mysql-simple](http://github.com/bos/mysql-simple) by Bryan O'Sullivan
