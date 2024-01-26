@@ -16,6 +16,7 @@ Maintainer:          Janne Hellsten <jjhellst@gmail.com>
 Copyright:           (c) 2011 MailRank, Inc.,
                      (c) 2011-2012 Leon P Smith,
                      (c) 2012-2014 Janne Hellsten
+                     (c) 2022-2024 Joshua Chia
 Homepage:            http://github.com/nurpax/sqlite-simple
 bug-reports:         http://github.com/nurpax/sqlite-simple/issues
 Stability:           stable
@@ -23,7 +24,7 @@ Category:            Database
 Build-type:          Simple
 
 Cabal-version:       >= 1.10
-tested-with:         GHC == 8.8.4 || == 8.10.7 || == 9.0.2 || == 9.2.8 || == 9.4.8 || == 9.6.3 || == 9.8.1
+tested-with:         GHC == 8.8.4 || == 8.10.7 || == 9.0.2 || == 9.2.8 || == 9.4.8 || == 9.6.4 || == 9.8.1
 extra-source-files:  README.md
                      changelog
 
