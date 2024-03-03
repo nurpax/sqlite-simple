@@ -1,5 +1,14 @@
-0.4.18.1
-	* Add generic implementation of 'FromRow' and 'ToRow'.
+0.4.19.0
+	* Generic derivation of `FromRow` and `ToRow`
+	* Add `withSavePoint`
+	* Add `MonadFail` instance of `Ok`
+
+0.4.18.0
+	* Allow semigroups-0.19
+	* Support GHC 8.8.1
+
+0.4.17.0
+	* Add `createFunction` and `deleteFunction`
 
 0.4.16.0
 	* Add FromField instance for SQLData (thanks @LindaOrtega, @Shimuuar)
