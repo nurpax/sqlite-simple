@@ -73,8 +73,6 @@ instance MonadPlus Ok where
     mplus = (<|>)
 
 instance Monad Ok where
-    return = Ok
-
     Errors es >>= _ = Errors es
     Ok a      >>= f = f a
 
