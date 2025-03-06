@@ -44,6 +44,8 @@ import           Data.Time (UTCTime, Day)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Typeable (Typeable, typeOf)
+import           Data.UUID.Types (UUID)
+import qualified Data.UUID.Types as UUID
 import           Data.Word (Word8, Word16, Word32, Word64)
 import           GHC.Float (double2Float)
 
@@ -186,6 +188,13 @@ instance FromField UTCTime where
 
   fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
+instance FromField UUID where
+  fromField f@(Field (SQLText t) _) =
+    case UUID.fromText t of
+      Just uuid -> Ok uuid
+      Nothing -> returnError ConversionFailed f "couldn't parse UUID field"
+
+  fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
 instance FromField Day where
   fromField f@(Field (SQLText t) _) =

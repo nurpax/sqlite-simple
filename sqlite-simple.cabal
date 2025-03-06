@@ -57,6 +57,7 @@ Library
     text >= 0.11,
     time,
     transformers,
+    uuid-types >= 1.0.0,
     Only >= 0.1 && < 0.1.1
 
   if impl(ghc < 8.0)
@@ -112,3 +113,4 @@ test-suite test
                , direct-sqlite
                , text
                , time
+               , uuid

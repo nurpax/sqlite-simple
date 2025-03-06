@@ -33,6 +33,7 @@ tests =
     , TestLabel "Simple"    . testSimpleQueryCov
     , TestLabel "Simple"    . testSimpleStrings
     , TestLabel "Simple"    . testSimpleChanges
+    , TestLabel "Simple"    . testSimpleUUID
     , TestLabel "ParamConv" . testParamConvNull
     , TestLabel "ParamConv" . testParamConvInt
     , TestLabel "ParamConv" . testParamConvIntWidths
