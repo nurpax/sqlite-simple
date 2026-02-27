@@ -67,6 +67,7 @@ module Database.SQLite.Simple (
   , queryWith
   , queryWith_
   , queryNamed
+  , queryNamedWith
   , lastInsertRowId
   , changes
   , totalChanges
@@ -74,6 +75,7 @@ module Database.SQLite.Simple (
   , fold
   , fold_
   , foldNamed
+  , foldNamedWith
     -- * Statements that do not return results
   , execute
   , execute_
@@ -379,8 +381,12 @@ queryWith_ fromRow_ conn query =
 -- r \<- 'queryNamed' c \"SELECT * FROM posts WHERE id=:id AND date>=:date\" [\":id\" ':=' postId, \":date\" ':=' afterDate]
 -- @
 queryNamed :: (FromRow r) => Connection -> Query -> [NamedParam] -> IO [r]
-queryNamed conn templ params =
-  withStatementNamedParams conn templ params $ \stmt -> doFoldToList fromRow stmt
+queryNamed = queryNamedWith fromRow
+
+-- | A version of 'queryNamed' that takes an explicit 'RowParser'.
+queryNamedWith :: RowParser r -> Connection -> Query -> [NamedParam] -> IO [r]
+queryNamedWith fromRow_ conn templ params =
+  withStatementNamedParams conn templ params $ \stmt -> doFoldToList fromRow_ stmt
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
@@ -438,9 +444,19 @@ foldNamed :: ( FromRow row )
           -> a
           -> (a -> row -> IO a)
           -> IO a
-foldNamed conn query params initalState action =
+foldNamed = foldNamedWith fromRow
+
+-- | A version of 'foldNamed' that takes an explicit 'RowParser'.
+foldNamedWith :: RowParser row
+              -> Connection
+              -> Query
+              -> [NamedParam]
+              -> a
+              -> (a -> row -> IO a)
+              -> IO a
+foldNamedWith fromRow_ conn query params initalState action =
   withStatementNamedParams conn query params $ \stmt ->
-    doFold fromRow stmt initalState action
+    doFold fromRow_ stmt initalState action
 
 doFold :: RowParser row -> Statement ->  a -> (a -> row -> IO a) -> IO a
 doFold fromRow_ stmt initState action =
