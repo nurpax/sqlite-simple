@@ -67,6 +67,7 @@ module Database.SQLite.Simple (
   , queryWith
   , queryWith_
   , queryNamed
+  , queryNamedWith
   , lastInsertRowId
   , changes
   , totalChanges
@@ -381,6 +382,18 @@ queryWith_ fromRow_ conn query =
 queryNamed :: (FromRow r) => Connection -> Query -> [NamedParam] -> IO [r]
 queryNamed conn templ params =
   withStatementNamedParams conn templ params $ \stmt -> doFoldToList fromRow stmt
+
+-- | A version of 'query' where the query parameters (placeholders)
+-- are named and take an explicit RowParser
+--
+-- Example:
+--
+-- @
+-- r \<- 'queryNamed' fromRow c \"SELECT * FROM posts WHERE id=:id AND date>=:date\" [\":id\" ':=' postId, \":date\" ':=' afterDate]
+-- @
+queryNamedWith :: RowParser r -> Connection -> Query -> [NamedParam] -> IO [r]
+queryNamedWith fromRow_ conn templ params =
+  withStatementNamedParams conn templ params $ \stmt -> doFoldToList fromRow_ stmt
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO ()
