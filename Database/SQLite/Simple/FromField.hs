@@ -39,6 +39,7 @@ import           Control.Exception (SomeException(..), Exception)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
+import           Data.Functor.Identity (Identity (..))
 import           Data.Int (Int8, Int16, Int32, Int64)
 import           Data.Time (UTCTime, Day)
 import qualified Data.Text as T
@@ -197,6 +198,9 @@ instance FromField Day where
 
 instance FromField SQLData where
   fromField f = Ok (fieldData f)
+
+instance (FromField a) => FromField (Identity a) where
+  fromField f = Identity <$> fromField f
 
 fieldTypename :: Field -> String
 fieldTypename = B.unpack . gettypename . result
