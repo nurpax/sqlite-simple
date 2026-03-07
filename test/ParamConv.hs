@@ -40,6 +40,11 @@ testParamConvNull TestEnv{..} = TestCase $ do
   execute conn "INSERT INTO nulltype (id, t1) VALUES (?,?)" (two, "foo" :: String)
   [mr2] <- query_ conn "SELECT t1 FROM nulltype WHERE id = 2" :: IO [Only (Maybe String)]
   assertEqual "nulls" (Just "foo") (fromOnly mr2)
+  -- Test null conversion for Float/Double
+  [Only nanD] <- query_ conn "SELECT NULL" :: IO [Only Double]
+  assertBool "NULL for Double" $ isNaN nanD
+  [Only nanF] <- query_ conn "SELECT NULL" :: IO [Only Float]
+  assertBool "NULL for Float" $ isNaN nanF
 
 testParamConvInt :: TestEnv -> Test
 testParamConvInt TestEnv{..} = TestCase $ do

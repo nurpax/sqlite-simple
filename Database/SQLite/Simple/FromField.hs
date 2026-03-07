@@ -145,10 +145,12 @@ instance FromField Word where
 
 instance FromField Double where
     fromField (Field (SQLFloat flt) _) = Ok flt
+    fromField (Field  SQLNull       _) = Ok (0/0)
     fromField f                        = returnError ConversionFailed f "expecting an SQLFloat column type"
 
 instance FromField Float where
     fromField (Field (SQLFloat flt) _) = Ok . double2Float $ flt
+    fromField (Field  SQLNull       _) = Ok (0/0)
     fromField f                        = returnError ConversionFailed f "expecting an SQLFloat column type"
 
 instance FromField Bool where
