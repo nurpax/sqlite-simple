@@ -73,7 +73,9 @@ module Database.SQLite.Simple (
   , totalChanges
     -- * Queries that stream results
   , fold
+  , foldWith
   , fold_
+  , foldWith_
   , foldNamed
   , foldNamedWith
     -- * Statements that do not return results
@@ -420,9 +422,19 @@ fold :: ( FromRow row, ToRow params )
         -> a
         -> (a -> row -> IO a)
         -> IO a
-fold conn query params initalState action =
+fold = foldWith fromRow
+
+foldWith :: ( ToRow params )
+           => RowParser row
+           -> Connection
+           -> Query
+           -> params
+           -> a
+           -> (a -> row -> IO a)
+           -> IO a
+foldWith fromRow_ conn query params initalState action =
   withStatementParams conn query params $ \stmt ->
-    doFold fromRow stmt initalState action
+    doFold fromRow_ stmt initalState action
 
 -- | A version of 'fold' which does not perform parameter substitution.
 fold_ :: ( FromRow row )
@@ -431,9 +443,18 @@ fold_ :: ( FromRow row )
         -> a
         -> (a -> row -> IO a)
         -> IO a
-fold_ conn query initalState action =
+fold_ = foldWith_ fromRow
+
+-- | A version of 'fold_' that takes an explicit 'RowParser'.
+foldWith_ :: RowParser row
+          -> Connection
+          -> Query
+          -> a
+          -> (a -> row -> IO a)
+          -> IO a
+foldWith_ fromRow_ conn query initalState action =
   withStatement conn query $ \stmt ->
-    doFold fromRow stmt initalState action
+    doFold fromRow_ stmt initalState action    
 
 -- | A version of 'fold' where the query parameters (placeholders) are
 -- named.
