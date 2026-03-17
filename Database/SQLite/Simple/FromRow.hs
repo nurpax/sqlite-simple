@@ -23,9 +23,10 @@ module Database.SQLite.Simple.FromRow
      , field
      , fieldWith
      , numFieldsRemaining
+     , returnRowError
      ) where
 
-import           Control.Exception (SomeException(..))
+import           Control.Exception (Exception, SomeException(..))
 import           Control.Monad (replicateM)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
@@ -133,6 +134,9 @@ numFieldsRemaining = RP $ do
   ncols <- asks nColumns
   (columnIdx,_) <- lift get
   return $! ncols - columnIdx
+
+returnRowError :: Exception err => err -> RowParser a
+returnRowError err = RP . lift . lift $ Errors [SomeException err]
 
 instance (FromField a) => FromRow (Only a) where
     fromRow = Only <$> field

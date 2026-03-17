@@ -84,6 +84,7 @@ module Database.SQLite.Simple (
   , executeNamed
   , execute_
   , field
+  , returnRowError
     -- * Transactions
   , withTransaction
   , withImmediateTransaction
