@@ -17,6 +17,7 @@ import TestImports()
 import TestImports
 import UserInstances
 import Utf8Strings
+import With
 
 tests :: [TestEnv -> Test]
 tests =
@@ -68,7 +69,7 @@ tests =
     , TestLabel "Imports"   . testImports
     , TestLabel "QQ"        . testSimpleQQ
     , TestLabel "QQ"        . testMultiLinedQQ
-    ]
+    ] ++ testsWith
 
 -- | Action for connecting to the database that will be used for testing.
 --

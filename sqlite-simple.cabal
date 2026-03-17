@@ -95,6 +95,7 @@ test-suite test
                 , TestImports
                 , UserInstances
                 , Utf8Strings
+                , With
 
   ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
 
