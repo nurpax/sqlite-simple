@@ -101,6 +101,8 @@ module Database.SQLite.Simple (
   , columnCount
   , withBind
   , nextRow
+   -- * Row parsing
+  , parseRow
     -- ** Exceptions
   , FormatError(..)
   , ResultError(..)
@@ -112,6 +114,7 @@ import           Control.Exception
 import           Control.Monad (void, when, forM_)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
+import           Data.Bifunctor (first)
 import           Data.Int (Int64)
 import           Data.IORef
 import qualified Data.Text as T
@@ -505,27 +508,30 @@ nextRowWith fromRow_ (Statement stmt) = do
   case statRes of
     Base.Row -> do
       rowRes <- Base.columns stmt
-      let nCols = length rowRes
-      row <- convertRow fromRow_ rowRes nCols
+      row <- convertRow fromRow_ rowRes
       return $ Just row
     Base.Done -> return Nothing
 
-convertRow :: RowParser r -> [Base.SQLData] -> Int -> IO r
-convertRow fromRow_ rowRes ncols = do
+-- | Attempt to parse a row.
+parseRow :: RowParser r -> [Base.SQLData] -> Either SomeException r
+parseRow fromRow_ rowRes = do
   let rw = RowParseRO ncols
   case runStateT (runReaderT (unRP fromRow_) rw) (0, rowRes) of
     Ok (val,(col,_))
        | col == ncols -> return val
-       | otherwise -> errorColumnMismatch (ColumnOutOfBounds col)
-    Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
-    Errors [x] ->
-      throw x `Control.Exception.catch` (\e -> errorColumnMismatch (e :: ColumnOutOfBounds))
-    Errors xs  -> throwIO $ ManyErrors xs
+       | otherwise -> first SomeException $ errorColumnMismatch (ColumnOutOfBounds col)
+    Errors []  -> Left $ SomeException $ ConversionFailed "" "" "unknown error"
+    Errors [x] -> case fromException x of
+      Just (e :: ColumnOutOfBounds) -> first SomeException $ errorColumnMismatch e
+      _ -> Left $ SomeException x
+    Errors xs  -> Left $ SomeException $ ManyErrors xs
   where
-    errorColumnMismatch :: ColumnOutOfBounds -> IO r
+    ncols = length rowRes
+
+    errorColumnMismatch :: ColumnOutOfBounds -> Either ResultError r
     errorColumnMismatch (ColumnOutOfBounds c) = do
       let vals = map (\f -> (gettypename f, ellipsis f)) rowRes
-      throwIO (ConversionFailed
+      Left (ConversionFailed
                (show ncols ++ " values: " ++ show vals)
                ("at least " ++ show c ++ " slots in target type")
                "mismatch between number of columns to convert and number in target type")
@@ -536,6 +542,11 @@ convertRow fromRow_ rowRes ncols = do
       | otherwise        = bs
       where
         bs = T.pack $ show sql
+
+convertRow :: RowParser r -> [Base.SQLData] -> IO r
+convertRow fromRow_ rowRes = case parseRow fromRow_ rowRes of
+  Left (SomeException e) -> throwIO e
+  Right res -> pure res
 
 withTransactionPrivate :: Connection -> IO a -> TransactionType -> IO a
 withTransactionPrivate conn action ttype =
