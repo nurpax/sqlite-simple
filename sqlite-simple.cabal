@@ -108,6 +108,7 @@ test-suite test
   build-depends: base
                , base16-bytestring
                , bytestring >= 0.9
+               , directory
                , HUnit
                , sqlite-simple
                , direct-sqlite

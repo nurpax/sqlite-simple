@@ -54,6 +54,9 @@ tests =
     , TestLabel "Errors"    . testErrorsImmediateTransaction
     , TestLabel "Errors"    . testErrorsExclusiveTransaction
     , TestLabel "Errors"    . testErrorsSavepoint
+    , TestLabel "Errors"    . testErrorsBusyCommit withImmediateTransaction
+    , TestLabel "Errors"    . testErrorsBusyCommit withSavepoint
+    , TestLabel "Errors"    . testErrorsEndedTransaction
     , TestLabel "Utf8"      . testUtf8Simplest
     , TestLabel "Utf8"      . testBlobs
     , TestLabel "Instances" . testUserFromField

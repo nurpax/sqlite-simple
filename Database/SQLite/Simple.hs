@@ -109,7 +109,7 @@ module Database.SQLite.Simple (
   ) where
 
 import           Control.Exception
-import           Control.Monad (void, when, forM_)
+import           Control.Monad (void, when, unless, forM_)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 import           Data.Int (Int64)
@@ -542,7 +542,7 @@ withTransactionPrivate conn action ttype =
   mask $ \restore -> do
     begin
     r <- restore action `onException` rollback
-    commit
+    commit `onException` rollback
     return r
   where
     begin    = execute_ conn $ case ttype of
@@ -553,9 +553,11 @@ withTransactionPrivate conn action ttype =
     commit   = execute_ conn $ case ttype of
                  Savepoint name -> Query $ "RELEASE '" <> name <> "'"
                  _ -> "COMMIT TRANSACTION"
-    rollback = execute_ conn $ case ttype of
-                 Savepoint name -> Query $ "ROLLBACK TO '" <> name <> "'"
-                 _ -> "ROLLBACK TRANSACTION"
+    rollback = do
+      autocommit <- BaseD.getAutoCommit $ connectionHandle conn
+      unless autocommit $ execute_ conn $ case ttype of
+        Savepoint name -> Query $ "ROLLBACK TO '" <> name <> "'"
+        _ -> "ROLLBACK TRANSACTION"
 
 
 -- | Run an IO action inside a SQL transaction started with @BEGIN IMMEDIATE
@@ -611,15 +613,17 @@ withTransaction conn action =
 -- | Run an IO action inside an SQLite @SAVEPOINT@. If the action throws any
 -- kind of an exception, the transaction will be rolled back to the savepoint
 -- with @ROLLBACK TO@. Otherwise the results are released to the outer
--- transaction if any with @RELEASE@.
+-- transaction with @RELEASE@. Outside of a transaction, the action is run
+-- with 'withTransaction'.
 --
 -- See <https://sqlite.org/lang_savepoint.html> for a full description of
 -- savepoint semantics.
 withSavepoint :: Connection -> IO a -> IO a
 withSavepoint conn action = do
   n <- atomicModifyIORef' (connectionTempNameCounter conn) $ \n -> (n + 1, n)
+  autocommit <- BaseD.getAutoCommit $ connectionHandle conn
   withTransactionPrivate conn action $
-    Savepoint $ "sqlite_simple_savepoint_" <> T.pack (show n)
+    if autocommit then Deferred else Savepoint $ "sqlite_simple_savepoint_" <> T.pack (show n)
 
 fmtError :: Show v => String -> Query -> [v] -> a
 fmtError msg q xs =
