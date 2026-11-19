@@ -10,6 +10,8 @@ module Errors (
   , testErrorsImmediateTransaction
   , testErrorsExclusiveTransaction
   , testErrorsSavepoint
+  , testErrorsBusyCommit
+  , testErrorsEndedTransaction
   ) where
 
 import           Control.Exception
@@ -19,6 +21,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import           Data.Word
 import           Data.Time (Day, UTCTime)
+import           System.Directory (getTemporaryDirectory, removeFile)
+import           System.IO (hClose, openTempFile)
 
 import           Common
 import           Database.SQLite.Simple.Types (Null)
@@ -28,6 +32,12 @@ assertResultErrorThrown action expectedError =
   catch
     (action >> assertFailure ("Expected error: " ++ show expectedError ++ ", but nothing was thrown"))
     (\(e :: ResultError) -> assertEqual "assertResultErrorThrown" expectedError e)
+
+assertBusyThrown :: IO a -> Assertion
+assertBusyThrown action =
+  catch
+    (action >> assertFailure "Expected ErrorBusy, but nothing was thrown")
+    (\(e :: SQLError) -> assertEqual "assertBusyThrown" ErrorBusy (sqlError e))
 
 assertFormatErrorCaught :: IO a -> Assertion
 assertFormatErrorCaught action = do
@@ -297,6 +307,7 @@ testErrorsSavepoint TestEnv{..} = TestCase $ do
           "INSERT INTO strans (t) VALUES (:txt)" [":missing" := ("foo" :: String)])
   e <- rowExists
   False @=? e
+  withTransaction conn $ return ()
   where
     rowExists = do
       rows <- query_ conn "SELECT t FROM strans" :: IO [Only String]
@@ -307,3 +318,24 @@ testErrorsSavepoint TestEnv{..} = TestCase $ do
         [] ->
           return False
         _ -> error "should have only one row"
+
+testErrorsBusyCommit :: (Connection -> IO () -> IO ()) -> TestEnv -> Test
+testErrorsBusyCommit transaction _ = TestCase $ do
+  dir <- getTemporaryDirectory
+  bracket (openTempFile dir "busy.db") (removeFile . fst) $ \(path, h) -> do
+    hClose h
+    withConnection path $ \writer -> withConnection path $ \reader -> do
+      let insert = transaction writer $ execute_ writer "INSERT INTO busy DEFAULT VALUES"
+      execute_ writer "CREATE TABLE busy (id INTEGER PRIMARY KEY)"
+      withTransaction reader $ do
+        _ <- query_ reader "SELECT id FROM busy" :: IO [Only Int]
+        assertBusyThrown insert
+      insert
+      [Only n] <- query_ writer "SELECT count(*) FROM busy"
+      (1 :: Int) @=? n
+
+testErrorsEndedTransaction :: TestEnv -> Test
+testErrorsEndedTransaction TestEnv{..} = TestCase $
+  catch
+    (withTransaction conn (execute_ conn "ROLLBACK") >> assertFailure "Expected SQLError, but nothing was thrown")
+    (\(e :: SQLError) -> "cannot commit - no transaction is active" @=? sqlErrorDetails e)
